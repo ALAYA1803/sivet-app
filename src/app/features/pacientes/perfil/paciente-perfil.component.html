@@ -1,0 +1,281 @@
+@if (mascota(); as m) {
+  <div class="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+    <!-- Breadcrumb -->
+    <button
+      type="button"
+      class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 mb-4"
+      (click)="volver()"
+    >
+      <app-icon name="chevron-left" [size]="14" /> Volver a pacientes
+    </button>
+
+    <!-- Hero -->
+    <div
+      class="bg-gradient-to-br from-[var(--primary-50)] to-white dark:from-slate-800/60 dark:to-slate-800/20 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 mb-6"
+    >
+      <div class="flex flex-col sm:flex-row items-start gap-5">
+        <app-pet-avatar [especie]="m.especie" [size]="88" />
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <h1 class="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-50 tracking-tight">
+              {{ m.nombre }}
+            </h1>
+            <app-badge [tone]="m.especie === 'Canino' ? 'warning' : 'purple'">
+              {{ m.especie }} · {{ m.raza }}
+            </app-badge>
+            @if (m.esterilizada) {
+              <app-badge tone="success">Esterilizada</app-badge>
+            }
+          </div>
+          <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-600 dark:text-slate-400 mt-2">
+            <div>
+              <span class="text-slate-400">Sexo:</span>
+              <span class="font-medium text-slate-700 dark:text-slate-200">
+                {{ m.sexo === 'M' ? 'Macho' : 'Hembra' }}
+              </span>
+            </div>
+            <div>
+              <span class="text-slate-400">Edad:</span>
+              <span class="font-medium text-slate-700 dark:text-slate-200">{{ m.edad }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400">Peso:</span>
+              <span class="font-medium text-slate-700 dark:text-slate-200">{{ m.peso }} kg</span>
+            </div>
+            <div>
+              <span class="text-slate-400">Color:</span>
+              <span class="font-medium text-slate-700 dark:text-slate-200">{{ m.color }}</span>
+            </div>
+            @if (m.microchip) {
+              <div>
+                <span class="text-slate-400">Microchip:</span>
+                <span class="font-mono text-xs font-medium text-slate-700 dark:text-slate-200">
+                  {{ m.microchip }}
+                </span>
+              </div>
+            }
+          </div>
+          @if (cliente(); as c) {
+            <div
+              class="flex items-center gap-3 mt-4 pt-4 border-t border-slate-200/70 dark:border-slate-700/50"
+            >
+              <app-avatar [name]="c.nombre" [size]="32" />
+              <div>
+                <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {{ c.nombre }}
+                </div>
+                <div class="text-xs text-slate-500 flex items-center gap-3 mt-0.5">
+                  <span class="font-mono">DNI {{ c.dni }}</span>
+                  <span class="flex items-center gap-1">
+                    <app-icon name="phone" [size]="11" /> {{ c.telefono }}
+                  </span>
+                  <span class="flex items-center gap-1">
+                    <app-icon name="map-pin" [size]="11" /> {{ c.direccion }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="flex flex-col gap-2">
+          <app-button variant="primary" (clicked)="goTo('/atencion')">
+            <app-icon icon name="plus" [size]="16" [stroke]="2.4" />Nueva atención
+          </app-button>
+          <app-button variant="secondary">
+            <app-icon icon name="file-text" [size]="16" />Generar receta
+          </app-button>
+          <app-button variant="ghost">
+            <app-icon icon name="edit" [size]="16" />Editar perfil
+          </app-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex items-center gap-1 border-b border-slate-200 dark:border-slate-700/50 mb-6 overflow-x-auto">
+      @for (t of tabs; track t.id) {
+        <button
+          type="button"
+          (click)="tab.set(t.id)"
+          class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap flex-shrink-0"
+          [class]="
+            tab() === t.id
+              ? 'border-[var(--primary)] text-[var(--primary-700)]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          "
+        >
+          <app-icon [name]="t.icon" [size]="15" />{{ t.label }}
+        </button>
+      }
+    </div>
+
+    @switch (tab()) {
+      @case ('historia') {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Timeline -->
+          <div class="lg:col-span-2">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Línea de tiempo</h2>
+              <app-badge tone="neutral">
+                <app-icon name="eye" [size]="11" /> Registro inalterable
+              </app-badge>
+            </div>
+            <div class="relative">
+              <!-- Línea vertical -->
+              <div
+                class="absolute left-[19px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-[var(--primary-200)] via-slate-200 to-transparent dark:from-[var(--primary-600)]/30 dark:via-slate-700"
+              ></div>
+              <div class="space-y-4">
+                @for (a of atenciones(); track a.id) {
+                  <div class="relative flex gap-4">
+                    <div
+                      class="relative z-10 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ring-4 ring-[var(--bg)]"
+                      [class]="nodeClass(a.tipo)"
+                    >
+                      <app-icon [name]="tipoIcon(a.tipo)" [size]="14" />
+                    </div>
+                    <app-card class="flex-1">
+                      <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                          <app-badge [tone]="tipoTone(a.tipo)">{{ a.tipo }}</app-badge>
+                          <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            {{ a.motivo }}
+                          </span>
+                        </div>
+                        <div class="text-xs text-slate-500 tabular-nums">
+                          {{ a.fecha | fecha: 'larga' }} · {{ a.fecha | fecha: 'hora' }}
+                        </div>
+                      </div>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <div>
+                          <div class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5">
+                            Diagnóstico
+                          </div>
+                          <div class="text-slate-800 dark:text-slate-200">{{ a.diagnostico }}</div>
+                        </div>
+                        <div>
+                          <div class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5">
+                            Tratamiento
+                          </div>
+                          <div class="text-slate-800 dark:text-slate-200">{{ a.tratamiento }}</div>
+                        </div>
+                      </div>
+                      <div
+                        class="flex items-center gap-5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50 text-xs"
+                      >
+                        <div class="flex items-center gap-1.5 text-slate-500">
+                          <span>🌡️</span><span class="tabular-nums">{{ a.temperatura }}°C</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-slate-500">
+                          <span>❤️</span><span class="tabular-nums">{{ a.frecCardiaca }} ppm</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-slate-500">
+                          <span>🫁</span><span class="tabular-nums">{{ a.frecRespiratoria }} rpm</span>
+                        </div>
+                        <div class="flex-1"></div>
+                        <div class="text-slate-600 dark:text-slate-400 font-medium">
+                          {{ a.veterinario }}
+                        </div>
+                        @if (a.recetaId) {
+                          <app-badge tone="primary"><app-icon name="pill" [size]="11" /> Receta</app-badge>
+                        }
+                      </div>
+                    </app-card>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar resumen -->
+          <div class="space-y-4">
+            <app-card>
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                <app-icon name="syringe" [size]="15" class="text-emerald-600" />Vacunación
+              </h3>
+              <div class="space-y-2.5 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-slate-600 dark:text-slate-400">Óctuple canina</span>
+                  <app-badge tone="success">Al día</app-badge>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-600 dark:text-slate-400">Antirrábica</span>
+                  <app-badge tone="success">Al día</app-badge>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-600 dark:text-slate-400">Desparasitación</span>
+                  <app-badge tone="warning">Vence 15 ago</app-badge>
+                </div>
+              </div>
+            </app-card>
+
+            <app-card>
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                <app-icon name="heart" [size]="15" class="text-red-500" />Alergias y notas
+              </h3>
+              <div class="text-sm text-slate-600 dark:text-slate-400">
+                <div
+                  class="px-3 py-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg flex items-start gap-2 mb-2"
+                >
+                  <app-icon name="alert-triangle" [size]="14" class="text-amber-600 mt-0.5" />
+                  <div class="text-xs text-amber-800 dark:text-amber-200">
+                    <strong>Sensibilidad alimentaria</strong> a proteína de pollo. Usar dieta
+                    hipoalergénica.
+                  </div>
+                </div>
+                <p class="text-xs">
+                  Paciente nervioso en consulta. Manejar con calma y sin movimientos bruscos.
+                </p>
+              </div>
+            </app-card>
+
+            <app-card>
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Resumen</h3>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Total atenciones</span>
+                  <span class="font-semibold tabular-nums">{{ atenciones().length }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Primera visita</span>
+                  <span class="font-medium">Mar 2025</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Cliente desde</span>
+                  <span class="font-medium">Ago 2024</span>
+                </div>
+              </div>
+            </app-card>
+          </div>
+        </div>
+      }
+      @case ('recetas') {
+        <app-recetas-tab [mascotaId]="mascotaId()" />
+      }
+      @case ('imagenes') {
+        <app-estudios-tab />
+      }
+      @case ('ventas') {
+        @if (cliente(); as c) {
+          <app-ventas-mascota-tab [clienteId]="c.id" />
+        }
+      }
+    }
+  </div>
+} @else {
+  <div class="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+    <button
+      type="button"
+      class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 mb-4"
+      (click)="volver()"
+    >
+      <app-icon name="chevron-left" [size]="14" /> Volver a pacientes
+    </button>
+    <div class="py-20 text-center">
+      <div class="text-base font-semibold text-slate-900 dark:text-slate-100">
+        Paciente no encontrado
+      </div>
+      <div class="text-sm text-slate-500 mt-1">El paciente solicitado no existe o fue removido.</div>
+    </div>
+  </div>
+}

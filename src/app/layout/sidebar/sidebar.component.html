@@ -1,0 +1,102 @@
+<aside
+  class="fixed inset-y-0 left-0 z-50 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-transform duration-200 flex-shrink-0 w-[244px] lg:static lg:z-auto lg:translate-x-0 lg:transition-all"
+  [class]="
+    (mobileOpen ? 'translate-x-0' : '-translate-x-full') +
+    ' ' +
+    (collapsed ? 'lg:w-[68px]' : 'lg:w-[244px]')
+  "
+>
+  <!-- Logo -->
+  <div
+    class="h-16 flex items-center border-b border-slate-100 dark:border-slate-800"
+    [class]="collapsed ? 'justify-center' : 'px-5'"
+  >
+    <div class="flex items-center gap-2.5">
+      <div
+        class="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--primary-700)] flex items-center justify-center text-white shadow-sm"
+      >
+        <app-icon name="paw" [size]="20" [stroke]="2.4" />
+      </div>
+      @if (!collapsed) {
+        <div class="min-w-0">
+          <div class="text-base font-bold tracking-tight text-slate-900 dark:text-slate-50 truncate">
+            {{ tenant().clinicaNombre }}
+          </div>
+          <div class="text-[10px] text-slate-400 tracking-wide -mt-0.5">{{ plataforma }}</div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 overflow-y-auto py-4">
+    @for (sec of sections; track sec.id) {
+      <div class="mb-2">
+        @if (!collapsed) {
+          <div class="px-5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            {{ sec.label }}
+          </div>
+        }
+        <div class="space-y-0.5" [class]="collapsed ? 'px-2' : 'px-3'">
+          @for (item of itemsBySection(sec.id); track item.route) {
+            <a
+              [routerLink]="item.route"
+              routerLinkActive
+              #rla="routerLinkActive"
+              (click)="navigate.emit()"
+              [title]="collapsed ? item.label : null"
+              class="w-full flex items-center rounded-lg transition-colors group relative"
+              [class]="
+                (collapsed ? 'h-10 justify-center' : 'h-10 px-3 gap-3') +
+                ' ' +
+                (rla.isActive
+                  ? 'bg-[var(--primary-50)] text-[var(--primary-700)] dark:bg-[var(--primary-600)]/15 dark:text-[var(--primary-300)] font-semibold'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60')
+              "
+            >
+              @if (rla.isActive && !collapsed) {
+                <div class="absolute left-0 top-2 bottom-2 w-0.5 bg-[var(--primary)] rounded-full"></div>
+              }
+              <span class="flex-shrink-0" [class.text-[var(--primary)]]="rla.isActive">
+                <app-icon [name]="item.icon" />
+              </span>
+              @if (!collapsed) {
+                <span class="flex-1 text-left text-sm">{{ item.label }}</span>
+                @if (item.badge) {
+                  <app-badge tone="neutral">{{ item.badge }}</app-badge>
+                }
+                @if (item.alert) {
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                }
+              }
+            </a>
+          }
+        </div>
+      </div>
+    }
+  </nav>
+
+  <!-- User -->
+  <div
+    class="border-t border-slate-100 dark:border-slate-800 p-3"
+    [class.flex]="collapsed"
+    [class.justify-center]="collapsed"
+  >
+    @if (collapsed) {
+      <app-avatar [name]="tenant().doctorNombre" [size]="36" />
+    } @else {
+      <div
+        class="flex items-center gap-2.5 p-2 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-lg cursor-pointer"
+      >
+        <app-avatar [name]="tenant().doctorNombre" [size]="36" />
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+            {{ tenant().doctorNombre }}
+          </div>
+          <div class="text-xs text-slate-500 truncate">{{ tenant().doctorRol }}</div>
+        </div>
+        <app-icon name="log-out" [size]="15" class="text-slate-400" />
+      </div>
+    }
+  </div>
+</aside>

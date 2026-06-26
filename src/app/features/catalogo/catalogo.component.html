@@ -1,0 +1,185 @@
+<div class="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-50 tracking-tight">
+        Catálogo e inventario
+      </h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">
+        {{ totalProductos() }} productos y servicios registrados
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <app-button variant="secondary" (clicked)="exportar()">
+        <app-icon icon name="print" [size]="16" />Exportar
+      </app-button>
+      <app-button variant="primary" (clicked)="nuevoProducto()">
+        <app-icon icon name="plus" [size]="16" [stroke]="2.4" />Nuevo producto
+      </app-button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <app-card>
+      <div class="text-xs uppercase tracking-wide text-slate-500 font-medium">Productos totales</div>
+      <div class="text-2xl font-semibold mt-1 tabular-nums">{{ totalProductos() }}</div>
+    </app-card>
+    <app-card>
+      <div class="text-xs uppercase tracking-wide text-slate-500 font-medium">Valor de inventario</div>
+      <div class="text-2xl font-semibold mt-1 tabular-nums">{{ valorInventario() | soles }}</div>
+    </app-card>
+    <app-card class="!border-amber-200 dark:!border-amber-500/30 bg-amber-50/40 dark:bg-amber-500/5">
+      <div class="text-xs uppercase tracking-wide text-amber-700 font-medium flex items-center gap-1">
+        <app-icon name="alert-triangle" [size]="12" /> Stock crítico
+      </div>
+      <div class="text-2xl font-semibold mt-1 text-amber-700 tabular-nums">{{ stockCritico() }}</div>
+    </app-card>
+    <app-card>
+      <div class="text-xs uppercase tracking-wide text-slate-500 font-medium">Vendidos hoy</div>
+      <div class="text-2xl font-semibold mt-1 tabular-nums">
+        23 <span class="text-sm font-normal text-slate-400">items</span>
+      </div>
+    </app-card>
+  </div>
+
+  <app-card padding="none" class="overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700/50 flex flex-wrap items-center gap-3">
+      <div class="flex-1 min-w-[200px] max-w-md">
+        <app-input
+          icon="search"
+          placeholder="Buscar producto o código..."
+          [value]="search()"
+          (valueChange)="search.set($event)"
+        />
+      </div>
+      <select
+        [value]="categoria()"
+        (change)="categoria.set($any($event.target).value)"
+        class="h-10 px-3 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
+      >
+        @for (c of categorias(); track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      </select>
+      <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+        @for (f of stockFilters; track f.value) {
+          <button
+            type="button"
+            (click)="stockFilter.set(f.value)"
+            class="px-3 h-8 text-xs font-medium rounded-md transition-colors"
+            [class]="
+              stockFilter() === f.value
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            "
+          >
+            {{ f.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+    <table class="w-full min-w-[860px]">
+      <thead>
+        <tr
+          class="text-left text-xs font-medium text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50"
+        >
+          <th class="px-5 py-3 font-medium">Código</th>
+          <th class="px-5 py-3 font-medium">Producto</th>
+          <th class="px-5 py-3 font-medium">Categoría</th>
+          <th class="px-5 py-3 font-medium text-right">Precio</th>
+          <th class="px-5 py-3 font-medium">Stock</th>
+          <th class="px-5 py-3 font-medium">Mín.</th>
+          <th class="px-5 py-3 font-medium">Estado</th>
+          <th class="px-5 py-3 font-medium"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+        @for (row of filtered(); track row.producto.id) {
+          <tr
+            class="text-sm hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+            [class]="row.sinStock ? 'bg-red-50/40 dark:bg-red-500/5' : ''"
+          >
+            <td class="px-5 py-3 font-mono text-xs text-slate-500">{{ row.producto.codigo }}</td>
+            <td class="px-5 py-3 font-medium text-slate-900 dark:text-slate-100">
+              {{ row.producto.nombre }}
+            </td>
+            <td class="px-5 py-3"><app-badge tone="neutral">{{ row.producto.categoria }}</app-badge></td>
+            <td class="px-5 py-3 text-right font-semibold tabular-nums">
+              {{ row.producto.precio | soles }}
+            </td>
+            <td class="px-5 py-3">
+              @if (row.producto.stock === null) {
+                <span class="text-slate-400 text-xs">N/A</span>
+              } @else {
+                <div class="flex items-center gap-2">
+                  <span
+                    class="font-semibold tabular-nums"
+                    [class]="
+                      row.sinStock
+                        ? 'text-red-600'
+                        : row.stockBajo
+                          ? 'text-amber-600'
+                          : 'text-slate-900 dark:text-slate-100'
+                    "
+                    >{{ row.producto.stock }}</span
+                  >
+                  <span class="text-xs text-slate-400">{{ row.producto.unidad }}</span>
+                  <div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      class="h-full rounded-full"
+                      [class]="row.sinStock ? 'bg-red-500' : row.stockBajo ? 'bg-amber-500' : 'bg-emerald-500'"
+                      [style.width.%]="row.pct"
+                    ></div>
+                  </div>
+                </div>
+              }
+            </td>
+            <td class="px-5 py-3 text-slate-500 tabular-nums">{{ row.producto.stockMin ?? '—' }}</td>
+            <td class="px-5 py-3">
+              @if (row.producto.stock === null) {
+                <app-badge tone="info">Servicio</app-badge>
+              } @else if (row.sinStock) {
+                <app-badge tone="danger"><app-icon name="alert-triangle" [size]="11" /> Agotado</app-badge>
+              } @else if (row.stockBajo) {
+                <app-badge tone="warning"><app-icon name="alert-triangle" [size]="11" /> Stock bajo</app-badge>
+              } @else {
+                <app-badge tone="success">Disponible</app-badge>
+              }
+            </td>
+            <td class="px-5 py-3 text-right">
+              <div class="flex justify-end gap-1">
+                <button
+                  type="button"
+                  (click)="editarProducto(row.producto)"
+                  title="Editar"
+                  class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"
+                >
+                  <app-icon name="edit" [size]="15" />
+                </button>
+                <button
+                  type="button"
+                  (click)="verProducto(row.producto)"
+                  title="Ver"
+                  class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"
+                >
+                  <app-icon name="eye" [size]="15" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    </div>
+  </app-card>
+
+  @if (modalOpen()) {
+    <app-producto-modal
+      [mode]="modalMode()"
+      [producto]="modalProducto()"
+      (close)="cerrarModal()"
+    />
+  }
+</div>

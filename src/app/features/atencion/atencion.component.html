@@ -1,0 +1,511 @@
+<div class="p-4 sm:p-6 lg:p-8 max-w-[1300px] mx-auto">
+  <button
+    type="button"
+    class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4"
+    (click)="cancelar()"
+  >
+    <app-icon name="chevron-left" [size]="14" /> Cancelar y volver
+  </button>
+
+  <div class="flex items-end justify-between mb-7">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-50 tracking-tight">
+        Nueva atención
+      </h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">
+        Registra rápidamente la consulta. Una vez guardada queda inalterable.
+      </p>
+    </div>
+  </div>
+
+  <!-- Stepper -->
+  <div class="flex items-center gap-2 mb-7 overflow-x-auto pb-1">
+    @for (s of steps; track s.n) {
+      <button
+        type="button"
+        (click)="irAStep(s.n)"
+        class="flex items-center gap-2.5 px-4 py-2 rounded-lg transition-colors"
+        [class]="
+          step() === s.n
+            ? 'bg-[var(--primary-50)] text-[var(--primary-700)]'
+            : step() > s.n
+              ? 'text-emerald-700 hover:bg-emerald-50'
+              : 'text-slate-400'
+        "
+      >
+        <div
+          class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold"
+          [class]="
+            step() === s.n
+              ? 'bg-[var(--primary)] text-white'
+              : step() > s.n
+                ? 'bg-emerald-500 text-white'
+                : 'bg-slate-200 text-slate-500'
+          "
+        >
+          @if (step() > s.n) {
+            <app-icon name="check" [size]="12" [stroke]="3" />
+          } @else {
+            {{ s.n }}
+          }
+        </div>
+        <span class="text-sm font-medium">{{ s.label }}</span>
+      </button>
+      @if (!$last) {
+        <div
+          class="flex-1 h-0.5 max-w-[60px]"
+          [class]="step() > s.n ? 'bg-emerald-500' : 'bg-slate-200'"
+        ></div>
+      }
+    }
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" [formGroup]="form">
+    <div class="lg:col-span-2 space-y-6">
+      <!-- PASO 1: Paciente -->
+      @if (step() === 1) {
+        <app-card>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4">
+            Selecciona el paciente
+          </h2>
+          <div class="relative">
+            <app-input
+              icon="search"
+              placeholder="Buscar por nombre de mascota, dueño o DNI..."
+              [value]="searchPaciente()"
+              (valueChange)="searchPaciente.set($event); showPicker.set(true)"
+            />
+            @if (showPicker() && searchPaciente()) {
+              <div
+                class="absolute z-10 left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-72 overflow-y-auto"
+              >
+                @for (row of filteredPacientes(); track row.mascota.id) {
+                  <button
+                    type="button"
+                    (click)="seleccionarPaciente(row.mascota.id)"
+                    class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/40 text-left"
+                  >
+                    <app-pet-avatar [especie]="row.mascota.especie" [size]="32" />
+                    <div class="flex-1">
+                      <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {{ row.mascota.nombre }}
+                        <span class="font-normal text-slate-400">· {{ row.mascota.raza }}</span>
+                      </div>
+                      <div class="text-xs text-slate-500">
+                        {{ row.cliente?.nombre }} · DNI {{ row.cliente?.dni }}
+                      </div>
+                    </div>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          @if (paciente(); as p) {
+            <div class="mt-5 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl flex items-center gap-4">
+              <app-pet-avatar [especie]="p.especie" [size]="64" />
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-xl font-semibold text-slate-900 dark:text-slate-100">{{ p.nombre }}</h3>
+                  <app-badge [tone]="p.especie === 'Canino' ? 'warning' : 'purple'">
+                    {{ p.especie }}
+                  </app-badge>
+                </div>
+                <div class="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                  {{ p.raza }} · {{ p.sexo === 'M' ? '♂' : '♀' }} · {{ p.edad }} · {{ p.peso }} kg
+                </div>
+                <div class="text-xs text-slate-500 mt-2">
+                  Dueño:
+                  <strong class="text-slate-700 dark:text-slate-300">{{ cliente()?.nombre }}</strong>
+                  · DNI {{ cliente()?.dni }} · {{ cliente()?.telefono }}
+                </div>
+              </div>
+              <button
+                type="button"
+                class="text-xs text-[var(--primary-700)] font-medium hover:underline"
+                (click)="cambiarPaciente()"
+              >
+                Cambiar
+              </button>
+            </div>
+          }
+        </app-card>
+      }
+
+      <!-- PASO 2: Examen -->
+      @if (step() === 2) {
+        <app-card>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4">
+            Motivo de la consulta
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                Tipo de atención
+              </label>
+              <select
+                formControlName="tipo"
+                class="w-full h-10 px-3 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)]"
+              >
+                @for (t of tiposAtencion; track t) {
+                  <option [value]="t">{{ t }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                Motivo principal
+              </label>
+              <input
+                formControlName="motivo"
+                placeholder="Ej: Decaimiento desde hace 2 días"
+                class="w-full h-10 px-3 text-sm rounded-lg border bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)]"
+                [class]="
+                  form.controls['motivo'].invalid && form.controls['motivo'].touched
+                    ? 'border-red-300'
+                    : 'border-slate-200 dark:border-slate-700'
+                "
+              />
+            </div>
+          </div>
+        </app-card>
+
+        <app-card>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4">Signos vitales</h2>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="bg-slate-50 dark:bg-slate-800/40 rounded-lg p-3">
+              <div class="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-1.5">
+                <span>🌡️</span>Temperatura
+              </div>
+              <div class="flex items-baseline gap-1">
+                <input
+                  formControlName="temperatura"
+                  class="w-full bg-transparent text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-100 focus:outline-none"
+                />
+                <span class="text-sm text-slate-400 font-medium">°C</span>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">38.0 - 39.2 normal</div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/40 rounded-lg p-3">
+              <div class="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-1.5">
+                <span>❤️</span>Frec. cardiaca
+              </div>
+              <div class="flex items-baseline gap-1">
+                <input
+                  formControlName="frecCardiaca"
+                  class="w-full bg-transparent text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-100 focus:outline-none"
+                />
+                <span class="text-sm text-slate-400 font-medium">ppm</span>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">70-160 normal</div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/40 rounded-lg p-3">
+              <div class="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-1.5">
+                <span>🫁</span>Frec. respiratoria
+              </div>
+              <div class="flex items-baseline gap-1">
+                <input
+                  formControlName="frecRespiratoria"
+                  class="w-full bg-transparent text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-100 focus:outline-none"
+                />
+                <span class="text-sm text-slate-400 font-medium">rpm</span>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">10-30 normal</div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/40 rounded-lg p-3">
+              <div class="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-1.5">
+                <span>⚖️</span>Peso actual
+              </div>
+              <div class="flex items-baseline gap-1">
+                <input
+                  formControlName="peso"
+                  class="w-full bg-transparent text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-100 focus:outline-none"
+                />
+                <span class="text-sm text-slate-400 font-medium">kg</span>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Anterior: {{ paciente()?.peso }} kg</div>
+            </div>
+          </div>
+        </app-card>
+
+        <app-card>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4">Examen físico</h2>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            @for (label of examenFisico; track label) {
+              <div>
+                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                  {{ label }}
+                </label>
+                <select
+                  class="w-full h-10 px-3 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)]"
+                >
+                  <option>Normal</option>
+                  <option>Alterado</option>
+                  <option>No evaluado</option>
+                </select>
+              </div>
+            }
+          </div>
+        </app-card>
+      }
+
+      <!-- PASO 3: Diagnóstico + Receta -->
+      @if (step() === 3) {
+        <app-card>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4">
+            Diagnóstico y tratamiento
+          </h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                Diagnóstico
+              </label>
+              <textarea
+                rows="3"
+                formControlName="diagnostico"
+                placeholder="Ej: Gastritis aguda probable, indiscreción alimentaria..."
+                class="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)]"
+                [class]="
+                  form.controls['diagnostico'].invalid && form.controls['diagnostico'].touched
+                    ? 'border-red-300'
+                    : 'border-slate-200 dark:border-slate-700'
+                "
+              ></textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                Plan terapéutico
+              </label>
+              <textarea
+                rows="3"
+                formControlName="tratamiento"
+                placeholder="Indicaciones generales para el dueño..."
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)]"
+              ></textarea>
+            </div>
+          </div>
+        </app-card>
+
+        <app-card>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">
+                Receta médica digital
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Se generará un documento para imprimir y firmar manualmente
+              </p>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" formControlName="incluirReceta" class="w-4 h-4 accent-[var(--primary)]" />
+              <span class="text-sm text-slate-700 dark:text-slate-300">Incluir receta</span>
+            </label>
+          </div>
+          @if (incluirReceta) {
+            <div class="space-y-3" formArrayName="receta">
+              @for (item of receta.controls; track $index) {
+                <div
+                  class="p-4 border border-slate-200 dark:border-slate-700/50 rounded-lg relative"
+                  [formGroupName]="$index"
+                >
+                  <button
+                    type="button"
+                    (click)="removeReceta($index)"
+                    [disabled]="receta.length === 1"
+                    class="absolute top-2 right-2 p-1 text-slate-400 hover:text-red-600 disabled:opacity-40"
+                  >
+                    <app-icon name="x" [size]="14" />
+                  </button>
+                  <div class="grid grid-cols-12 gap-3">
+                    <div class="col-span-12 sm:col-span-5">
+                      <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        Medicamento
+                      </label>
+                      <input
+                        formControlName="medicamento"
+                        placeholder="Ej: Omeprazol 10mg"
+                        class="w-full h-9 px-3 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
+                      />
+                    </div>
+                    <div class="col-span-6 sm:col-span-3">
+                      <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        Dosis
+                      </label>
+                      <input
+                        formControlName="dosis"
+                        placeholder="1 cáps. c/24h"
+                        class="w-full h-9 px-3 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
+                      />
+                    </div>
+                    <div class="col-span-6 sm:col-span-2">
+                      <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        Vía
+                      </label>
+                      <select
+                        formControlName="via"
+                        class="w-full h-9 px-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none"
+                      >
+                        @for (via of viasAdministracion; track via) {
+                          <option [value]="via">{{ via }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="col-span-6 sm:col-span-2">
+                      <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        Duración
+                      </label>
+                      <input
+                        formControlName="duracion"
+                        placeholder="5 días"
+                        class="w-full h-9 px-3 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
+                      />
+                    </div>
+                    <div class="col-span-12">
+                      <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        Indicaciones para el dueño
+                      </label>
+                      <input
+                        formControlName="indicaciones"
+                        placeholder="Ej: Administrar en ayunas, 30 min antes del desayuno"
+                        class="w-full h-9 px-3 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
+                      />
+                    </div>
+                  </div>
+                </div>
+              }
+              <button
+                type="button"
+                (click)="addReceta()"
+                class="w-full py-2.5 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium text-[var(--primary-700)] hover:bg-[var(--primary-50)] dark:hover:bg-[var(--primary-50)]/10 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <app-icon name="plus" [size]="14" [stroke]="2.4" /> Agregar otro medicamento
+              </button>
+            </div>
+          }
+        </app-card>
+      }
+
+      <!-- Footer nav -->
+      <div class="flex items-center justify-between pt-2">
+        <app-button variant="ghost" (clicked)="anterior()">
+          <app-icon icon name="chevron-left" [size]="16" />{{ step() === 1 ? 'Cancelar' : 'Anterior' }}
+        </app-button>
+        @if (step() < 3) {
+          <app-button variant="primary" (clicked)="siguiente()">
+            Continuar<app-icon iconRight name="chevron-right" [size]="16" />
+          </app-button>
+        } @else {
+          <app-button variant="success" (clicked)="guardar()">
+            <app-icon icon name="check" [size]="16" [stroke]="2.4" />Guardar atención
+          </app-button>
+        }
+      </div>
+    </div>
+
+    <!-- Sidebar contexto -->
+    <div class="space-y-4">
+      @if (paciente(); as p) {
+        <app-card>
+          <div class="text-xs font-medium text-slate-500 uppercase tracking-wide mb-3">Atendiendo a</div>
+          <div class="flex items-center gap-3">
+            <app-pet-avatar [especie]="p.especie" [size]="48" />
+            <div>
+              <div class="font-semibold text-slate-900 dark:text-slate-100">{{ p.nombre }}</div>
+              <div class="text-xs text-slate-500">{{ p.raza }} · {{ p.edad }}</div>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50">
+            <div class="text-xs font-medium text-slate-500 mb-2">Última atención</div>
+            <div class="text-sm">
+              <div class="font-medium text-slate-800 dark:text-slate-200">24 mayo · Gastritis</div>
+              <div class="text-xs text-slate-500 mt-0.5">Dra. Espinoza · Omeprazol 5d</div>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+            <div
+              class="px-3 py-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-md flex items-start gap-2"
+            >
+              <app-icon name="alert-triangle" [size]="13" class="text-amber-600 mt-0.5 flex-shrink-0" />
+              <div class="text-xs text-amber-800 dark:text-amber-200">
+                <strong>Alergia:</strong> proteína de pollo
+              </div>
+            </div>
+          </div>
+        </app-card>
+      }
+
+      <app-card>
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">Estudios adjuntos</div>
+          <button
+            type="button"
+            (click)="fileInput.click()"
+            class="text-xs text-[var(--primary-700)] font-medium hover:underline"
+          >
+            Subir
+          </button>
+        </div>
+
+        <!-- Input de archivo oculto, disparado por el botón visible -->
+        <input
+          #fileInput
+          type="file"
+          multiple
+          class="hidden"
+          accept="image/*,application/pdf"
+          (change)="onArchivosSeleccionados($event)"
+        />
+
+        <button
+          type="button"
+          (click)="fileInput.click()"
+          class="w-full border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg py-6 flex flex-col items-center gap-2 text-slate-400 hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors"
+        >
+          <app-icon name="image" [size]="24" />
+          <span class="text-xs font-medium">Selecciona archivos para adjuntar</span>
+          <span class="text-[10px] text-slate-400">JPG, PNG, PDF · máx 10MB</span>
+        </button>
+
+        @if (archivosAdjuntos().length > 0) {
+          <div class="mt-3 space-y-1.5">
+            @for (nombre of archivosAdjuntos(); track nombre) {
+              <div
+                class="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-slate-50 dark:bg-slate-800/40 text-xs"
+              >
+                <app-icon name="file-text" [size]="14" class="text-slate-400 flex-shrink-0" />
+                <span class="flex-1 min-w-0 truncate text-slate-700 dark:text-slate-300">
+                  {{ nombre }}
+                </span>
+                <button
+                  type="button"
+                  (click)="removerArchivo(nombre)"
+                  class="text-slate-400 hover:text-red-600 flex-shrink-0"
+                >
+                  <app-icon name="x" [size]="13" />
+                </button>
+              </div>
+            }
+            <p class="text-[10px] text-slate-400 pt-1">
+              {{ archivosAdjuntos().length }} archivo(s) se adjuntarán al guardar la atención.
+            </p>
+          </div>
+        }
+      </app-card>
+
+      <div
+        class="rounded-xl p-5 bg-[var(--primary-50)] border border-[var(--primary-200)] dark:bg-[var(--primary-50)]/10 dark:border-[var(--primary-600)]/30"
+      >
+        <div class="flex gap-2.5">
+          <app-icon name="sparkles" [size]="16" class="text-[var(--primary-700)] mt-0.5 flex-shrink-0" />
+          <div>
+            <div class="text-sm font-semibold text-[var(--primary-700)]">Tip de SIVET</div>
+            <div class="text-xs text-[var(--primary-700)]/80 mt-1 leading-relaxed">
+              Una vez guardada, esta atención no se podrá modificar. Solo agregar enmiendas firmadas
+              como anexo.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

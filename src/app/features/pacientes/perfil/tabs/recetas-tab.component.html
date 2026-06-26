@@ -1,0 +1,70 @@
+@if (recetas().length === 0) {
+  <app-empty-state
+    icon="pill"
+    title="Aún no hay recetas registradas"
+    message="Cuando generes una receta en una atención, aparecerá aquí."
+    cta="Crear primera receta"
+  />
+} @else {
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    @for (r of recetas(); track r.receta.id) {
+      <app-card [class.print-area]="printingId() === r.receta.id">
+        <div
+          class="flex items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700/50"
+        >
+          <div>
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">Receta médica</div>
+            <div class="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
+              {{ r.atencion.fecha | fecha: 'larga' }}
+            </div>
+          </div>
+          <div class="flex gap-1 print:hidden">
+            <button
+              type="button"
+              (click)="imprimir(r.receta.id)"
+              title="Imprimir receta"
+              class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"
+            >
+              <app-icon name="print" [size]="15" />
+            </button>
+            <button
+              type="button"
+              title="Enviar por correo"
+              class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"
+            >
+              <app-icon name="mail" [size]="15" />
+            </button>
+          </div>
+        </div>
+        <div class="space-y-3">
+          @for (m of r.receta.items; track $index) {
+            <div class="flex gap-3">
+              <div
+                class="w-8 h-8 rounded-md bg-[var(--primary-50)] text-[var(--primary-700)] flex items-center justify-center flex-shrink-0"
+              >
+                <app-icon name="pill" [size]="14" />
+              </div>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {{ m.medicamento }}
+                </div>
+                <div class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                  {{ m.dosis }} · {{ m.via }} · <strong>{{ m.duracion }}</strong>
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5 italic">{{ m.indicaciones }}</div>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="mt-6 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+          <div class="border-t border-slate-300 dark:border-slate-600 w-44 pt-1.5">
+            <div class="text-xs font-medium text-slate-700 dark:text-slate-300">
+              {{ r.atencion.veterinario }}
+            </div>
+            <div class="text-[11px] text-slate-500">CMVP 12483 · Firma y sello</div>
+          </div>
+        </div>
+      </app-card>
+    }
+  </div>
+}

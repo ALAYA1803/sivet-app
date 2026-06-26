@@ -1,0 +1,94 @@
+@if (venta$(); as venta) {
+  <app-modal
+    [open]="true"
+    title="Anular venta"
+    [subtitle]="'Venta ' + formatId(venta.id) + ' · ' + (venta.total | soles)"
+    [dangerHeader]="true"
+    size="md"
+    [hasFooter]="true"
+    (close)="close.emit()"
+  >
+    <div class="space-y-4">
+      <div
+        class="p-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/30 rounded-lg flex gap-3"
+      >
+        <app-icon name="alert-triangle" [size]="20" class="text-red-600 flex-shrink-0 mt-0.5" />
+        <div class="text-sm text-red-800 dark:text-red-200">
+          <strong>Esta acción es irreversible.</strong> La venta quedará marcada como anulada en el
+          historial. El registro original se conserva pero ya no contará para ingresos ni reportes.
+        </div>
+      </div>
+
+      <!-- Resumen venta -->
+      <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+        <div
+          class="px-4 py-2 bg-slate-50 dark:bg-slate-800/40 text-xs font-medium text-slate-500 uppercase tracking-wide"
+        >
+          Detalle a anular
+        </div>
+        <div class="divide-y divide-slate-100 dark:divide-slate-700/50">
+          @for (i of venta.items; track $index) {
+            <div class="px-4 py-2 flex items-center justify-between text-sm">
+              <div>
+                <span class="text-slate-500 tabular-nums mr-3">{{ i.cantidad }}×</span>
+                <span class="text-slate-900 dark:text-slate-200">{{ i.nombre }}</span>
+              </div>
+              <span class="tabular-nums font-medium">{{ i.precio * i.cantidad | soles }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <label
+        class="flex items-start gap-2.5 p-3 border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg cursor-pointer"
+      >
+        <input
+          type="checkbox"
+          [checked]="reposicion()"
+          (change)="reposicion.set($any($event.target).checked)"
+          class="mt-0.5 accent-emerald-600"
+        />
+        <div class="flex-1">
+          <div class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+            Restaurar inventario automáticamente
+          </div>
+          <div class="text-xs text-emerald-700/80 dark:text-emerald-300/80 mt-0.5">
+            Las {{ venta.items.length }} unidades volverán al stock disponible.
+          </div>
+        </div>
+      </label>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+          Motivo de la anulación <span class="text-red-500">*</span>
+        </label>
+        <textarea
+          rows="3"
+          [value]="motivo()"
+          (input)="motivo.set($any($event.target).value)"
+          placeholder="Ej: Cliente cambió de opinión, error en el cobro, etc."
+          class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500"
+        ></textarea>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+          Para confirmar, escribe <code class="text-red-600 font-bold">ANULAR</code> en mayúsculas
+        </label>
+        <input
+          [value]="confirmacion()"
+          (input)="confirmacion.set($any($event.target).value)"
+          placeholder="ANULAR"
+          class="w-full h-10 px-3 text-sm font-mono tabular-nums rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500"
+        />
+      </div>
+    </div>
+
+    <ng-container ngProjectAs="[footer]">
+      <app-button variant="ghost" (clicked)="close.emit()">Cancelar</app-button>
+      <app-button variant="danger" [disabled]="!puede()" (clicked)="confirmar.emit(motivo())">
+        <app-icon icon name="undo" [size]="16" />Confirmar anulación
+      </app-button>
+    </ng-container>
+  </app-modal>
+}

@@ -1,0 +1,74 @@
+@if (venta$(); as venta) {
+  <app-modal
+    [open]="true"
+    [title]="'Venta ' + formatId(venta.id)"
+    [subtitle]="fechaLarga(venta.fecha)"
+    size="md"
+    [hasFooter]="true"
+    (close)="close.emit()"
+  >
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="text-xs text-slate-500 uppercase tracking-wide font-medium mb-1">Cliente</div>
+          <div class="text-sm font-semibold">{{ cliente()?.nombre }}</div>
+          <div class="text-xs text-slate-500">DNI {{ cliente()?.dni }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 uppercase tracking-wide font-medium mb-1">
+            Vendedor / Pago
+          </div>
+          <div class="text-sm font-semibold">{{ venta.vendedor }}</div>
+          <div class="text-xs text-slate-500">{{ venta.metodoPago }}</div>
+        </div>
+      </div>
+      <div class="border border-slate-200 dark:border-slate-700/50 rounded-lg overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-800/40 text-xs uppercase tracking-wide text-slate-500">
+              <th class="px-3 py-2 text-left font-medium">Producto</th>
+              <th class="px-3 py-2 text-right font-medium">Cant.</th>
+              <th class="px-3 py-2 text-right font-medium">Precio</th>
+              <th class="px-3 py-2 text-right font-medium">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+            @for (i of venta.items; track $index) {
+              <tr>
+                <td class="px-3 py-2">{{ i.nombre }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ i.cantidad }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ i.precio | soles }}</td>
+                <td class="px-3 py-2 text-right tabular-nums font-medium">
+                  {{ i.cantidad * i.precio | soles }}
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="bg-slate-50 dark:bg-slate-800/40 font-bold">
+              <td colspan="3" class="px-3 py-2 text-right">Total</td>
+              <td class="px-3 py-2 text-right tabular-nums">{{ venta.total | soles }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      @if (venta.estado === 'anulada' && venta.motivoAnulacion) {
+        <div
+          class="p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/30 rounded-lg"
+        >
+          <div class="text-xs font-medium text-red-700 dark:text-red-300 uppercase tracking-wide">
+            Venta anulada
+          </div>
+          <div class="text-sm text-red-800 dark:text-red-200 mt-0.5">{{ venta.motivoAnulacion }}</div>
+        </div>
+      }
+    </div>
+
+    <ng-container ngProjectAs="[footer]">
+      <app-button variant="ghost" (clicked)="close.emit()">Cerrar</app-button>
+      <app-button variant="secondary" (clicked)="imprimir()">
+        <app-icon icon name="print" [size]="16" />Imprimir comprobante
+      </app-button>
+    </ng-container>
+  </app-modal>
+}

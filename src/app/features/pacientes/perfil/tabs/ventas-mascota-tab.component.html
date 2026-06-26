@@ -1,0 +1,32 @@
+<app-card padding="none">
+  <div class="overflow-x-auto">
+  <table class="w-full min-w-[560px]">
+    <thead>
+      <tr
+        class="text-left text-xs uppercase tracking-wide text-slate-500 border-b border-slate-100 dark:border-slate-700/50"
+      >
+        <th class="px-5 py-3 font-medium">Fecha</th>
+        <th class="px-5 py-3 font-medium">Detalle</th>
+        <th class="px-5 py-3 font-medium">Método</th>
+        <th class="px-5 py-3 font-medium text-right">Total</th>
+        <th class="px-5 py-3 font-medium">Estado</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+      @for (v of ventas(); track v.id) {
+        <tr class="text-sm hover:bg-slate-50 dark:hover:bg-slate-800/40">
+          <td class="px-5 py-3 tabular-nums">{{ v.fecha | fecha: 'diaMes' }}</td>
+          <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ itemsResumen(v.items) }}</td>
+          <td class="px-5 py-3"><app-badge tone="neutral">{{ v.metodoPago }}</app-badge></td>
+          <td class="px-5 py-3 text-right font-semibold tabular-nums">{{ v.total | soles }}</td>
+          <td class="px-5 py-3">
+            <app-badge [tone]="v.estado === 'completada' ? 'success' : 'danger'">
+              {{ v.estado }}
+            </app-badge>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+  </div>
+</app-card>

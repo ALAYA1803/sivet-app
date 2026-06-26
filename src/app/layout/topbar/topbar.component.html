@@ -1,0 +1,140 @@
+<header
+  class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 flex items-center gap-2 sm:gap-4 flex-shrink-0"
+>
+  <!-- Hamburguesa (móvil): abre el drawer -->
+  <button
+    type="button"
+    (click)="openMobile.emit()"
+    class="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 lg:hidden"
+    title="Menú"
+  >
+    <app-icon name="menu" [size]="20" />
+  </button>
+
+  <!-- Colapsar/expandir (desktop) -->
+  <button
+    type="button"
+    (click)="toggleSidebar.emit()"
+    class="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hidden lg:flex"
+    [title]="sidebarCollapsed ? 'Expandir' : 'Colapsar'"
+  >
+    <app-icon name="chevrons-left" [size]="18" [class]="sidebarCollapsed ? 'rotate-180' : ''" />
+  </button>
+
+  <!-- Búsqueda global -->
+  <div class="relative flex-1 max-w-2xl">
+    <div class="relative">
+      <app-icon
+        name="search"
+        [size]="16"
+        class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+      />
+      <input
+        type="text"
+        placeholder="Buscar mascota, dueño por DNI o nombre, producto..."
+        class="w-full h-10 pl-10 pr-16 text-sm rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)] transition-all placeholder:text-slate-400"
+      />
+      <kbd
+        class="hidden sm:block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500"
+        >⌘K</kbd
+      >
+    </div>
+  </div>
+
+  <div class="flex-1"></div>
+
+  <!-- Nueva atención (texto oculto en móvil) -->
+  <a
+    routerLink="/atencion"
+    class="inline-flex items-center justify-center font-medium rounded-lg transition-colors h-8 px-2.5 sm:px-3 text-sm gap-1.5 bg-[var(--primary-50)] hover:bg-[var(--primary-100)] text-[var(--primary-700)]"
+  >
+    <app-icon name="plus" [size]="14" [stroke]="2.4" />
+    <span class="hidden sm:inline">Nueva atención</span>
+  </a>
+
+  <!-- Notificaciones -->
+  <div class="relative">
+    <button
+      type="button"
+      (click)="toggleDropdown()"
+      class="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+      title="Notificaciones"
+    >
+      <app-icon name="bell" [size]="18" />
+      @if (cantidad() > 0) {
+        <span
+          class="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center"
+        >
+          {{ cantidad() }}
+        </span>
+      }
+    </button>
+
+    @if (dropdownOpen()) {
+      <!-- Backdrop para cerrar al hacer clic fuera -->
+      <div class="fixed inset-0 z-40" (click)="cerrarDropdown()"></div>
+
+      <div
+        class="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg overflow-hidden"
+      >
+        <div
+          class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800"
+        >
+          <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Notificaciones
+          </span>
+          @if (cantidad() > 0) {
+            <button
+              type="button"
+              (click)="marcarTodasLeidas()"
+              class="text-xs font-medium text-[var(--primary-700)] hover:underline"
+            >
+              Marcar todas como leídas
+            </button>
+          }
+        </div>
+
+        <div class="max-h-96 overflow-y-auto">
+          @for (n of alertas(); track n.id) {
+            <a
+              [routerLink]="n.route"
+              (click)="cerrarDropdown()"
+              class="flex gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800/60 last:border-0"
+            >
+              <div
+                class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                [class]="
+                  n.tipo === 'warning'
+                    ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/15'
+                    : 'bg-sky-50 text-sky-600 dark:bg-sky-500/15'
+                "
+              >
+                <app-icon [name]="n.icono" [size]="16" />
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                  {{ n.titulo }}
+                </p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ n.mensaje }}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">{{ n.tiempo }}</p>
+              </div>
+            </a>
+          } @empty {
+            <div class="px-4 py-8 text-center text-sm text-slate-400">
+              No tienes notificaciones pendientes
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Settings -->
+  <a
+    routerLink="/configuracion"
+    class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+    title="Configuración"
+  >
+    <app-icon name="settings" [size]="18" />
+  </a>
+</header>

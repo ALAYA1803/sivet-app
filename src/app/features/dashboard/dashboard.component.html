@@ -1,0 +1,185 @@
+<div class="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+  <!-- Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-7">
+    <div>
+      <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1">
+        <app-icon name="calendar" [size]="14" />
+        Martes, 26 de mayo · 12:47 PM
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-50 tracking-tight">
+        Buenos días, Dra. Espinoza
+      </h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">
+        Resumen de actividad de Veterinaria SIVET — Sede San Borja
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <app-button variant="secondary">
+        <app-icon icon name="calendar" [size]="16" />Hoy
+      </app-button>
+      <app-button variant="primary" (clicked)="goTo('/atencion')">
+        <app-icon icon name="plus" [size]="16" [stroke]="2.4" />Nueva atención
+      </app-button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <app-kpi-card
+      label="Ingresos del día"
+      [value]="ingresosHoy() | soles"
+      delta="+18%"
+      iconBg="bg-emerald-50 dark:bg-emerald-500/15"
+      [hint]="ventasHoy().length + ' ventas registradas'"
+    >
+      <app-icon icon name="money" [size]="20" class="text-emerald-700" />
+    </app-kpi-card>
+
+    <app-kpi-card
+      label="Pacientes hoy"
+      [value]="pacientesHoy"
+      delta="+3"
+      iconBg="bg-[var(--primary-50)]"
+      hint="2 cirugías programadas"
+    >
+      <app-icon icon name="paw" [size]="20" class="text-[var(--primary-700)]" />
+    </app-kpi-card>
+
+    <app-kpi-card
+      label="Citas pendientes"
+      [value]="citas().length"
+      iconBg="bg-sky-50 dark:bg-sky-500/15"
+      [hint]="proximaCita()"
+    >
+      <app-icon icon name="calendar" [size]="20" class="text-sky-700" />
+    </app-kpi-card>
+
+    <app-kpi-card
+      label="Productos críticos"
+      [value]="totalCriticos()"
+      delta="Atención"
+      deltaTone="danger"
+      iconBg="bg-red-50 dark:bg-red-500/15"
+      hint="Stock por debajo del mínimo"
+    >
+      <app-icon icon name="alert-triangle" [size]="20" class="text-red-700" />
+    </app-kpi-card>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    <!-- Flujo de pacientes -->
+    <app-card class="lg:col-span-2">
+      <div class="flex items-start justify-between mb-5">
+        <div>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Flujo de pacientes</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Últimos 7 días · Atenciones registradas
+          </p>
+        </div>
+        <div class="flex items-center gap-4 text-xs">
+          <div class="flex items-center gap-1.5">
+            <div class="w-2.5 h-2.5 rounded-sm bg-[var(--primary)]"></div>
+            <span class="text-slate-600 dark:text-slate-400">Hoy</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-2.5 h-2.5 rounded-sm bg-[var(--primary-200)]"></div>
+            <span class="text-slate-600 dark:text-slate-400">Anterior</span>
+          </div>
+        </div>
+      </div>
+      <app-pacientes-chart [data]="flujoPacientes()" />
+    </app-card>
+
+    <!-- Métodos de pago -->
+    <app-card>
+      <div class="mb-5">
+        <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Métodos de pago</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Distribución de ingresos hoy</p>
+      </div>
+      <app-pagos-donut [data]="metodosPago()" />
+    </app-card>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Citas de hoy -->
+    <app-card class="lg:col-span-2">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Citas de hoy</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Agenda restante de la tarde</p>
+        </div>
+        <app-button variant="ghost" size="sm" (clicked)="goTo('/pacientes')">
+          Ver agenda<app-icon iconRight name="arrow-right" [size]="14" />
+        </app-button>
+      </div>
+      <div class="divide-y divide-slate-100 dark:divide-slate-700/50 -mx-1">
+        @for (c of citas(); track c.hora) {
+          <div
+            class="flex items-center gap-4 px-1 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-md cursor-pointer transition-colors"
+            (click)="goTo('/pacientes')"
+          >
+            <div class="w-14 text-right">
+              <div class="text-base font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                {{ c.hora }}
+              </div>
+            </div>
+            <app-pet-avatar [especie]="c.especie" [size]="36" />
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-slate-900 dark:text-slate-100">
+                {{ c.mascota }} <span class="text-slate-400 font-normal">· {{ c.cliente }}</span>
+              </div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ c.tipo }}</div>
+            </div>
+            <app-badge tone="info">{{ c.vet }}</app-badge>
+            <app-icon name="chevron-right" [size]="16" class="text-slate-300" />
+          </div>
+        }
+      </div>
+    </app-card>
+
+    <!-- Alerta de stock -->
+    <app-card>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Stock crítico</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Reposición necesaria</p>
+        </div>
+        <app-badge tone="danger">{{ totalCriticos() }}</app-badge>
+      </div>
+      <div class="space-y-3">
+        @for (p of stockCriticos().slice(0, 4); track p.id) {
+          <div
+            class="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 -mx-2 px-2 py-1.5 rounded-md"
+            (click)="goTo('/catalogo')"
+          >
+            <div class="flex items-center justify-between mb-1">
+              <div class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate pr-2">
+                {{ p.nombre }}
+              </div>
+              <div
+                class="text-xs font-semibold tabular-nums"
+                [class]="p.critical ? 'text-red-600' : 'text-amber-600'"
+              >
+                {{ p.stock }}/{{ p.stockMin }}
+              </div>
+            </div>
+            <div class="h-1.5 bg-slate-100 dark:bg-slate-700/40 rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full"
+                [class]="p.critical ? 'bg-red-500' : 'bg-amber-500'"
+                [style.width.%]="barWidth(p.pct)"
+              ></div>
+            </div>
+          </div>
+        }
+      </div>
+      <button
+        type="button"
+        class="mt-4 w-full text-sm font-medium text-[var(--primary-700)] hover:bg-[var(--primary-50)] py-2 rounded-md transition-colors"
+        (click)="goTo('/catalogo')"
+      >
+        Ver todos los productos →
+      </button>
+    </app-card>
+  </div>
+</div>
