@@ -7,11 +7,8 @@ import { IconComponent } from '../../shared/icons/icon.component';
 
 /**
  * Formulario reactivo de inicio de sesión. Pide credencial (usuario) y
- * contraseña; al autenticar delega en {@link AuthService} y redirige a la
- * URL guardada en `returnUrl` (o al dashboard).
- *
- * Las credenciales se validan contra la colección `usuarios` del backend
- * (db.json). Cuentas demo: `espinoza` / `123` · `recepcion` / `123`.
+ * contraseña; al autenticar delega en {@link AuthService} (POST /auth/login)
+ * y redirige a la URL guardada en `returnUrl` (o al dashboard).
  */
 @Component({
   selector: 'app-login',
@@ -109,8 +106,8 @@ import { IconComponent } from '../../shared/icons/icon.component';
     </form>
 
     <p class="mt-8 rounded-lg bg-slate-50 px-3 py-2.5 text-center text-xs text-slate-500 dark:bg-slate-800/60">
-      Demo: <span class="font-medium text-slate-700 dark:text-slate-300">espinoza</span> /
-      <span class="font-medium text-slate-700 dark:text-slate-300">123</span>
+      Demo: <span class="font-medium text-slate-700 dark:text-slate-300">admin</span> /
+      <span class="font-medium text-slate-700 dark:text-slate-300">admin123</span>
     </p>
   `,
 })
@@ -151,7 +148,17 @@ export class LoginComponent {
     this.loading.set(true);
     this.auth.login(this.form.getRawValue()).subscribe({
       next: (session) => {
-        this.toast.show(`Hola, ${session.payload.nombre} 👋`, 'success');
+        // Primer login: cambio de contraseña temporal obligatorio antes que nada.
+        if (this.auth.requierePasswordChange()) {
+          this.router.navigateByUrl('/auth/cambiar-password');
+          return;
+        }
+        this.toast.show(`Hola, ${session.payload.nombre}`, 'success');
+        // El SUPERADMIN va a su panel; el resto, a la URL de retorno o al dashboard.
+        if (this.auth.isSuperAdmin()) {
+          this.router.navigateByUrl('/backoffice');
+          return;
+        }
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/dashboard';
         this.router.navigateByUrl(returnUrl);
       },

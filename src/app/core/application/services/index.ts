@@ -10,3 +10,5 @@ export * from './export.service';
 export * from './tenant.service';
 export * from './agenda.service';
 export * from './auth.service';
+export * from './admin.service';
+export * from './personal.service';

@@ -44,6 +44,16 @@ export type IconName =
   | 'refresh'
   | 'undo'
   | 'sparkles'
+  | 'thermometer'
+  | 'lungs'
+  | 'scale'
+  | 'credit-card'
+  | 'smartphone'
+  | 'bone'
+  | 'copy'
+  | 'key'
+  | 'shield'
+  | 'lock'
   | 'menu';
 
 @Component({
@@ -231,6 +241,50 @@ export type IconName =
         @case ('sparkles') {
           <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
           <path d="M19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8L16.5 19.5l1.8-.7L19 17z" />
+        }
+        @case ('thermometer') {
+          <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0z" />
+        }
+        @case ('lungs') {
+          <path d="M12 4v8" />
+          <path d="M9 12c0-2-1.5-3-3.5-3-1 0-1.5.8-1.5 2 0 3 .5 5.5 1 7 .3.9 1.1 1 2 1s1.5-.4 1.5-1.3V12z" />
+          <path d="M15 12c0-2 1.5-3 3.5-3 1 0 1.5.8 1.5 2 0 3-.5 5.5-1 7-.3.9-1.1 1-2 1s-1.5-.4-1.5-1.3V12z" />
+        }
+        @case ('scale') {
+          <path d="M12 3v18" />
+          <path d="M7 21h10" />
+          <path d="M5 7h2c2 0 5-1 7-2 2 1 5 2 7 2" />
+          <path d="M2 16l3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1z" />
+          <path d="M16 16l3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1z" />
+        }
+        @case ('credit-card') {
+          <rect x="2" y="5" width="20" height="14" rx="2" />
+          <path d="M2 10h20" />
+        }
+        @case ('smartphone') {
+          <rect x="6" y="2" width="12" height="20" rx="2" />
+          <path d="M11 18h2" />
+        }
+        @case ('bone') {
+          <path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5z" />
+        }
+        @case ('copy') {
+          <rect x="9" y="9" width="13" height="13" rx="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        }
+        @case ('key') {
+          <circle cx="8" cy="15" r="4" />
+          <path d="M10.8 12.2 20 3" />
+          <path d="M17 6l2.5 2.5" />
+          <path d="M15 8l2 2" />
+        }
+        @case ('shield') {
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M9 12l2 2 4-4" />
+        }
+        @case ('lock') {
+          <rect x="4" y="11" width="16" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
         }
         @case ('menu') {
           <path d="M3 6h18M3 12h18M3 18h18" />

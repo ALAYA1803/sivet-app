@@ -6,8 +6,11 @@ import { environment } from '../../../../environments/environment';
 
 /**
  * Repositorio del catálogo (productos y servicios) e inventario. Consume el
- * backend REST (json-server) vía HttpClient y centraliza las mutaciones de
- * stock para que el POS las reutilice.
+ * backend REST (Spring Boot) vía HttpClient.
+ *
+ * El stock vendido/restaurado lo gestiona el backend de forma transaccional al
+ * crear/anular una venta (`POST`/`PATCH /ventas`); aquí solo reflejamos ese
+ * cambio en el Signal local para que la UI quede sincronizada sin recargar.
  */
 @Injectable({ providedIn: 'root' })
 export class CatalogoService {
@@ -36,45 +39,44 @@ export class CatalogoService {
     return this._productos().find((p) => p.id === id);
   }
 
-  /** Registra un nuevo producto (POST) y lo antepone a la lista al confirmarse. */
+  /**
+   * Registra un nuevo producto (POST) y lo antepone a la lista al confirmarse.
+   * El `id` (UUID) lo asigna el backend; el cliente solo envía los datos.
+   */
   agregarProducto(datos: Omit<Producto, 'id'>): Observable<Producto> {
-    const producto: Producto = { ...datos, id: `p${this._productos().length + 1}` };
     return this.http
-      .post<Producto>(this.apiUrl, producto)
+      .post<Producto>(this.apiUrl, datos)
       .pipe(tap((creado) => this._productos.update((ps) => [creado, ...ps])));
   }
 
-  /** Actualiza los datos de un producto existente (PUT). */
+  /** Actualiza los datos de un producto existente (PUT /productos/{id}). */
   actualizarProducto(id: string, datos: Omit<Producto, 'id'>): Observable<Producto> {
-    const producto: Producto = { ...datos, id };
     return this.http
-      .put<Producto>(`${this.apiUrl}/${id}`, producto)
+      .put<Producto>(`${this.apiUrl}/${id}`, datos)
       .pipe(tap((upd) => this._productos.update((ps) => ps.map((p) => (p.id === id ? upd : p)))));
   }
 
-  /** Descuenta `cantidad` del stock vía PATCH (ignora servicios sin inventario). */
-  descontarStock(productoId: string, cantidad: number): void {
-    const producto = this.getById(productoId);
-    if (!producto || producto.stock === null) return;
-    const stock = Math.max(0, producto.stock - cantidad);
-    this.patchStock(productoId, stock);
+  /**
+   * Refleja localmente el stock descontado por una venta ya confirmada en el
+   * backend. **No** hace HTTP: el descuento real lo realizó `POST /ventas` de
+   * forma transaccional; aquí solo evitamos recargar todo el catálogo.
+   */
+  aplicarDescuentoLocal(productoId: string, cantidad: number): void {
+    this.ajustarStockLocal(productoId, -cantidad);
   }
 
-  /** Repone `cantidad` al stock vía PATCH (p. ej. al anular una venta). */
-  restaurarStock(productoId: string, cantidad: number): void {
-    const producto = this.getById(productoId);
-    if (!producto || producto.stock === null) return;
-    this.patchStock(productoId, producto.stock + cantidad);
+  /** Refleja localmente el stock restaurado al anular una venta (sin HTTP). */
+  aplicarRestauracionLocal(productoId: string, cantidad: number): void {
+    this.ajustarStockLocal(productoId, cantidad);
   }
 
-  /** PATCH del stock en el backend + actualización del Signal local. */
-  private patchStock(productoId: string, stock: number): void {
-    this.http
-      .patch<Producto>(`${this.apiUrl}/${productoId}`, { stock })
-      .subscribe((upd) =>
-        this._productos.update((ps) =>
-          ps.map((p) => (p.id === productoId ? { ...p, stock: upd.stock } : p)),
-        ),
-      );
+  private ajustarStockLocal(productoId: string, delta: number): void {
+    this._productos.update((ps) =>
+      ps.map((p) =>
+        p.id === productoId && p.stock !== null
+          ? { ...p, stock: Math.max(0, p.stock + delta) }
+          : p,
+      ),
+    );
   }
 }

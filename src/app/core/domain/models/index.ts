@@ -9,3 +9,5 @@ export * from './dashboard.model';
 export * from './usuario.model';
 export * from './clinica.model';
 export * from './estudio.model';
+export * from './credenciales.model';
+export * from './empleado.model';

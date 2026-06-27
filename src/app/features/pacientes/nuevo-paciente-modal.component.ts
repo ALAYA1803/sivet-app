@@ -71,7 +71,7 @@ import { IconComponent } from '../../shared/icons/icon.component';
               />
             </div>
             <div>
-              <label [class]="labelClass">Color</label>
+              <label [class]="labelClass">Color *</label>
               <input formControlName="color" [class]="inputClass" placeholder="Ej: Marrón" />
             </div>
             <div>
@@ -111,11 +111,11 @@ import { IconComponent } from '../../shared/icons/icon.component';
               <input formControlName="telefono" [class]="inputClass" placeholder="Ej: 987654321" />
             </div>
             <div>
-              <label [class]="labelClass">Email</label>
-              <input formControlName="email" [class]="inputClass" placeholder="correo@ejemplo.com" />
+              <label [class]="labelClass">Email *</label>
+              <input formControlName="email" type="email" [class]="inputClass" placeholder="correo@ejemplo.com" />
             </div>
             <div class="col-span-2">
-              <label [class]="labelClass">Dirección</label>
+              <label [class]="labelClass">Dirección *</label>
               <input formControlName="direccion" [class]="inputClass" placeholder="Av. ..." />
             </div>
           </div>
@@ -155,17 +155,17 @@ export class NuevoPacienteModalComponent {
       raza: ['', Validators.required],
       sexo: ['M', Validators.required],
       edad: ['', Validators.required],
-      peso: ['', Validators.required],
-      color: [''],
+      peso: ['', [Validators.required, Validators.min(0)]],
+      color: ['', Validators.required],
       microchip: [''],
       esterilizada: [false],
     }),
     cliente: this.fb.group({
       nombre: ['', Validators.required],
-      dni: ['', [Validators.required, Validators.minLength(8)]],
+      dni: ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
       telefono: ['', Validators.required],
-      email: [''],
-      direccion: [''],
+      email: ['', [Validators.required, Validators.email]],
+      direccion: ['', Validators.required],
     }),
   });
 

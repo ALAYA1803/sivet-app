@@ -1,12 +1,17 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, switchMap, tap } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { Atencion, Estudio, Mascota, Receta, RecetaItem } from '../../domain/models';
 import { environment } from '../../../../environments/environment';
 
+/** Cuerpo del POST /atenciones en modo "receta embebida" (creación atómica). */
+type NuevaAtencion = Omit<Atencion, 'id' | 'recetaId'> & {
+  receta?: { items: RecetaItem[] };
+};
+
 /**
  * Repositorio del módulo clínico: pacientes (mascotas), su historia clínica
- * (atenciones) y las recetas emitidas. Consume el backend REST (json-server)
+ * (atenciones) y las recetas emitidas. Consume el backend REST (Spring Boot)
  * vía HttpClient y expone los datos como Signals.
  */
 @Injectable({ providedIn: 'root' })
@@ -50,11 +55,13 @@ export class PacientesService {
     return this._mascotas().find((m) => m.id === id);
   }
 
-  /** Registra una nueva mascota (POST) y la antepone a la lista al confirmarse. */
+  /**
+   * Registra una nueva mascota (POST) y la antepone a la lista al confirmarse.
+   * El `id` (UUID) y el `clinica_id` los asigna el backend.
+   */
   agregarMascota(datos: Omit<Mascota, 'id'>): Observable<Mascota> {
-    const mascota: Mascota = { ...datos, id: `m${this._mascotas().length + 1}` };
     return this.http
-      .post<Mascota>(this.mascotasUrl, mascota)
+      .post<Mascota>(this.mascotasUrl, datos)
       .pipe(tap((creada) => this._mascotas.update((ms) => [creada, ...ms])));
   }
 
@@ -76,31 +83,19 @@ export class PacientesService {
 
   /**
    * Registra una nueva atención (y su receta opcional) en la historia clínica.
-   * Si hay receta, primero la crea (POST /recetas) y luego la atención
-   * (POST /atenciones) referenciándola. La atención es inalterable una vez creada.
+   * Usa el modo "receta embebida" de `POST /atenciones`: si hay ítems, viajan en
+   * el campo `receta` y el backend crea atención + receta de forma atómica (§5.4).
+   * El backend asigna todos los UUID; la atención es inalterable una vez creada.
    */
   registrarAtencion(
     atencion: Omit<Atencion, 'id' | 'recetaId'>,
     recetaItems: RecetaItem[] = [],
   ): Observable<Atencion> {
-    const id = `a${this._atenciones().length + 1}`;
+    const body: NuevaAtencion =
+      recetaItems.length > 0 ? { ...atencion, receta: { items: recetaItems } } : { ...atencion };
 
-    if (recetaItems.length > 0) {
-      const recetaId = `r${this._recetas().length + 1}`;
-      const receta: Receta = { id: recetaId, atencionId: id, items: recetaItems };
-      return this.http.post<Receta>(this.recetasUrl, receta).pipe(
-        tap((creada) => this._recetas.update((rs) => [...rs, creada])),
-        switchMap(() => this.postAtencion({ ...atencion, id, recetaId })),
-      );
-    }
-
-    return this.postAtencion({ ...atencion, id });
-  }
-
-  /** POST de la atención + inserción optimista en el Signal local. */
-  private postAtencion(nueva: Atencion): Observable<Atencion> {
     return this.http
-      .post<Atencion>(this.atencionesUrl, nueva)
+      .post<Atencion>(this.atencionesUrl, body)
       .pipe(tap((creada) => this._atenciones.update((list) => [creada, ...list])));
   }
 }

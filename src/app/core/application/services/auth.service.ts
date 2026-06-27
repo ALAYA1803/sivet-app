@@ -11,7 +11,10 @@ export interface SessionPayload {
   id_usuario: string;
   nombre: string;
   rol: string;
+  /** Vacío/ausente para el SUPERADMIN, que no pertenece a ninguna clínica. */
   veterinaria_id: string;
+  /** Algunos backends marcan el primer login dentro del propio payload. */
+  requiereCambioPassword?: boolean;
 }
 
 /** Credenciales que envía el formulario de login. */
@@ -24,6 +27,8 @@ export interface LoginCredentials {
 export interface AuthSession {
   token: string;
   payload: SessionPayload;
+  /** True en el primer inicio: obliga a cambiar la contraseña temporal. */
+  requiereCambioPassword?: boolean;
 }
 
 const STORAGE_KEY = 'sivet.session';
@@ -47,6 +52,22 @@ export class AuthService {
   readonly isAuthenticated = computed(() => this._session() !== null);
   readonly veterinariaId = computed(() => this._session()?.payload.veterinaria_id ?? null);
   readonly token = computed(() => this._session()?.token ?? null);
+
+  /** Rol maestro de la plataforma (acceso al backoffice). */
+  readonly isSuperAdmin = computed(
+    () => (this._session()?.payload.rol ?? '').toUpperCase() === 'SUPERADMIN',
+  );
+
+  /** Administrador de su clínica (puede gestionar el personal). */
+  readonly isClinicAdmin = computed(
+    () => (this._session()?.payload.rol ?? '').toUpperCase() === 'ADMIN_CLINICA',
+  );
+
+  /** True mientras el usuario deba cambiar su contraseña temporal (primer login). */
+  readonly requierePasswordChange = computed(() => {
+    const s = this._session();
+    return !!(s?.requiereCambioPassword ?? s?.payload.requiereCambioPassword);
+  });
 
   /**
    * Rehidratación de sesión al arrancar la app (se ejecuta vía APP_INITIALIZER,
@@ -73,6 +94,11 @@ export class AuthService {
     }
 
     this.hydrateDoctor(restored.payload);
+
+    // El SUPERADMIN no tiene clínica que rehidratar.
+    if (!restored.payload.veterinaria_id) {
+      return of(void 0);
+    }
 
     return this.cargarClinica(restored.payload.veterinaria_id).pipe(
       map(() => void 0),
@@ -102,6 +128,10 @@ export class AuthService {
         this.persist(session);
         this._session.set(session);
         this.hydrateDoctor(session.payload);
+        // SUPERADMIN (o cuenta sin clínica): no hay tenant que cargar.
+        if (!session.payload.veterinaria_id) {
+          return of(session);
+        }
         return this.cargarClinica(session.payload.veterinaria_id).pipe(
           // El login ya fue exitoso; si la rehidratación del tenant falla no
           // anulamos la sesión (se reintenta en el próximo arranque).
@@ -118,6 +148,30 @@ export class AuthService {
 
   requestPasswordReset(credencial: string): Observable<void> {
     return of(void 0);
+  }
+
+  /**
+   * Cambio obligatorio de la contraseña temporal en el primer inicio de sesión
+   * (`POST /usuarios/cambiar-password-inicial`). Requiere sesión activa (el JWT
+   * temporal). Al confirmarse, baja la bandera para liberar el acceso normal.
+   */
+  cambiarPasswordInicial(nuevaPassword: string): Observable<void> {
+    return this.http
+      .post<unknown>(`${environment.apiUrl}/usuarios/cambiar-password-inicial`, { nuevaPassword })
+      .pipe(
+        tap(() => {
+          const actual = this._session();
+          if (!actual) return;
+          const actualizado: AuthSession = {
+            ...actual,
+            requiereCambioPassword: false,
+            payload: { ...actual.payload, requiereCambioPassword: false },
+          };
+          this.persist(actualizado);
+          this._session.set(actualizado);
+        }),
+        map(() => void 0),
+      );
   }
 
   logout(): void {
@@ -167,7 +221,8 @@ export class AuthService {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw) as AuthSession;
-      return parsed?.payload?.veterinaria_id ? parsed : null;
+      // Basta con token + payload: el SUPERADMIN no tiene `veterinaria_id`.
+      return parsed?.token && parsed?.payload ? parsed : null;
     } catch {
       return null;
     }

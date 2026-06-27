@@ -6,7 +6,7 @@ import { environment } from '../../../../environments/environment';
 /**
  * Repositorio de los datos agregados del dashboard (read models: flujo de
  * pacientes, recaudación por método de pago, citas del día). Consume el
- * backend REST (json-server) vía HttpClient y expone los datos como Signals.
+ * backend REST (Spring Boot) vía HttpClient y expone los datos como Signals.
  */
 @Injectable({ providedIn: 'root' })
 export class DashboardService {

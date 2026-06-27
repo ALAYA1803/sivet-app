@@ -5,6 +5,6 @@
  */
 export const environment = {
   production: true,
-  /** Base del backend (hoy: json-server simulado). */
-  apiUrl: 'http://localhost:8080',
+  /** Base del backend REST (Spring Boot). */
+  apiUrl: 'https://sivet-backend.onrender.com',
 };

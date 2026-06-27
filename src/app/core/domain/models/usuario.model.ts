@@ -6,7 +6,7 @@
 export interface Usuario {
   id: string;
   username: string;
-  /** Sólo para el login simulado contra json-server; el backend real nunca lo expone. */
+  /** Solo de entrada (alta de usuario). Se guarda hasheado (BCrypt); el backend nunca lo expone. */
   password: string;
   nombre: string;
   rol: string;

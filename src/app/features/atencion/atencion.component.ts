@@ -70,12 +70,9 @@ export class AtencionComponent {
   ];
 
   readonly step = signal(1);
-  readonly pacienteId = signal('m1');
+  readonly pacienteId = signal('');
   readonly searchPaciente = signal('');
   readonly showPicker = signal(false);
-
-  /** Nombres de los archivos seleccionados para adjuntar al guardar la atención. */
-  readonly archivosAdjuntos = signal<string[]>([]);
 
   readonly paciente = computed(() => this.pacientes.getMascota(this.pacienteId()));
   readonly cliente = computed(() => {
@@ -174,20 +171,6 @@ export class AtencionComponent {
   }
   removeReceta(i: number): void {
     if (this.receta.length > 1) this.receta.removeAt(i);
-  }
-
-  // --- Estudios adjuntos ---
-  onArchivosSeleccionados(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files?.length) return;
-    const nombres = Array.from(input.files).map((f) => f.name);
-    this.archivosAdjuntos.update((actuales) => [...actuales, ...nombres]);
-    // Permite volver a seleccionar el mismo archivo si se elimina y reintenta.
-    input.value = '';
-  }
-
-  removerArchivo(nombre: string): void {
-    this.archivosAdjuntos.update((actuales) => actuales.filter((n) => n !== nombre));
   }
 
   cancelar(): void {

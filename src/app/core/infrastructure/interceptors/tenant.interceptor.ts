@@ -11,25 +11,31 @@ import { AuthService } from '../../application/services/auth.service';
  *  - `Authorization: Bearer <token>` — autenticación.
  *  - `X-Tenant-ID: <veterinaria_id>` — aislamiento de datos por veterinaria.
  *
- * Si no hay sesión activa la petición pasa sin tocar (p. ej. el propio login).
- * Aún no hacemos llamadas HTTP reales: queda registrado para que la
- * arquitectura esté lista en cuanto exista el backend.
+ * Si no hay sesión activa la petición pasa sin tocar (p. ej. el propio login,
+ * que es la ruta pública que obtiene el token).
  */
+/**
+ * Rutas exentas del header `X-Tenant-ID`: `/auth/**` y `/clinicas/**` (§1.2) y
+ * `/admin-sivet/**` (panel SUPERADMIN, que opera por encima de cualquier tenant).
+ */
+const TENANT_EXEMPT = /\/(auth|clinicas|admin-sivet)(\/|$)/;
+
 export const tenantInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const token = auth.token();
   const veterinariaId = auth.veterinariaId();
 
-  if (!token || !veterinariaId) {
+  // Sin token no tocamos la petición (p. ej. el propio login).
+  if (!token) {
     return next(req);
   }
 
-  const authReq = req.clone({
-    setHeaders: {
-      Authorization: `Bearer ${token}`,
-      'X-Tenant-ID': veterinariaId,
-    },
-  });
+  const setHeaders: Record<string, string> = { Authorization: `Bearer ${token}` };
+  // El tenant solo viaja en rutas de negocio y solo si la sesión tiene clínica
+  // (el SUPERADMIN no la tiene).
+  if (veterinariaId && !TENANT_EXEMPT.test(req.url)) {
+    setHeaders['X-Tenant-ID'] = veterinariaId;
+  }
 
-  return next(authReq);
+  return next(req.clone({ setHeaders }));
 };

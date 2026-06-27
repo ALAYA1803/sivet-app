@@ -14,5 +14,12 @@ export const publicGuard: CanActivateFn = () => {
     return true;
   }
 
+  // Ya autenticado: lo enviamos a su destino real según estado y rol.
+  if (auth.requierePasswordChange()) {
+    return router.createUrlTree(['/auth/cambiar-password']);
+  }
+  if (auth.isSuperAdmin()) {
+    return router.createUrlTree(['/backoffice']);
+  }
   return router.createUrlTree(['/dashboard']);
 };

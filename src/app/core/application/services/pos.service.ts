@@ -10,8 +10,9 @@ export type NuevaVenta = Omit<Venta, 'id' | 'estado'>;
 
 /**
  * Repositorio del punto de venta y del historial de ventas. Consume el backend
- * REST (json-server) vía HttpClient y coordina el inventario a través de
- * {@link CatalogoService}.
+ * REST (Spring Boot) vía HttpClient. El descuento/restauración de inventario lo
+ * realiza el backend de forma transaccional al crear/anular la venta; aquí solo
+ * sincronizamos el Signal local del {@link CatalogoService}.
  */
 @Injectable({ providedIn: 'root' })
 export class PosService {
@@ -44,24 +45,25 @@ export class PosService {
   }
 
   /**
-   * Registra una venta (POST). Al confirmarse la antepone al Signal y descuenta
-   * el stock vendido en el backend a través del CatalogoService.
+   * Registra una venta (POST /ventas). El backend asigna el `id` (UUID), fija
+   * `estado = 'completada'` y descuenta el stock transaccionalmente. Al
+   * confirmarse, la antepone al Signal y sincroniza el inventario local.
    */
   registrarVenta(nueva: NuevaVenta): Observable<Venta> {
-    const venta: Venta = {
-      ...nueva,
-      id: `v${this._ventas().length + 1}`,
-      estado: 'completada',
-    };
-    return this.http.post<Venta>(this.apiUrl, venta).pipe(
+    return this.http.post<Venta>(this.apiUrl, nueva).pipe(
       tap((creada) => {
         this._ventas.update((ventas) => [creada, ...ventas]);
-        creada.items.forEach((item) => this.catalogo.descontarStock(item.productoId, item.cantidad));
+        creada.items.forEach((item) =>
+          this.catalogo.aplicarDescuentoLocal(item.productoId, item.cantidad),
+        );
       }),
     );
   }
 
-  /** Anula una venta (PATCH) y repone el stock de sus ítems al confirmarse. */
+  /**
+   * Anula una venta (PATCH /ventas/{id}). El backend restaura el stock de los
+   * ítems inventariados; aquí reflejamos ese cambio en el inventario local.
+   */
   anularVenta(id: string, motivo: string): Observable<Venta | null> {
     const venta = this.getById(id);
     if (!venta || venta.estado === 'anulada') return of(null);
@@ -75,7 +77,9 @@ export class PosService {
               v.id === id ? { ...v, estado: 'anulada', motivoAnulacion: motivo } : v,
             ),
           );
-          venta.items.forEach((item) => this.catalogo.restaurarStock(item.productoId, item.cantidad));
+          venta.items.forEach((item) =>
+            this.catalogo.aplicarRestauracionLocal(item.productoId, item.cantidad),
+          );
         }),
       );
   }

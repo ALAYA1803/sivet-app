@@ -52,9 +52,9 @@ export class PacientesListComponent {
 
   readonly filtros: FiltroOption[] = [
     { value: 'todos', label: 'Todos' },
-    { value: 'canino', label: '🐕 Caninos' },
-    { value: 'felino', label: '🐈 Felinos' },
-    { value: 'otros', label: '🐾 Otros' },
+    { value: 'canino', label: 'Caninos' },
+    { value: 'felino', label: 'Felinos' },
+    { value: 'otros', label: 'Otros' },
   ];
 
   readonly total = this.pacientes.total;

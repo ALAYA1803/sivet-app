@@ -1,9 +1,9 @@
 /**
  * Configuración de entorno para desarrollo (`ng serve`).
- * Apunta al json-server local que simula el backend REST.
+ * Apunta al backend REST local (Spring Boot) en el puerto 8080.
  */
 export const environment = {
   production: false,
-  /** Base del backend (json-server: `npm run api`). */
+  /** Base del backend REST (Spring Boot). */
   apiUrl: 'http://localhost:8080',
 };

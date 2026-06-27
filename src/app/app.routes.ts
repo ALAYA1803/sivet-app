@@ -1,11 +1,37 @@
 import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
+import { AuthLayoutComponent } from './features/auth/auth-layout.component';
 import { authGuard } from './core/infrastructure/guards/auth.guard';
 import { publicGuard } from './core/infrastructure/guards/public.guard';
+import { superAdminGuard } from './core/infrastructure/guards/superadmin.guard';
+import { passwordChangeGuard } from './core/infrastructure/guards/password-change.guard';
 
 export const routes: Routes = [
+  // Cambio obligatorio de contraseña temporal (primer login). Va dentro del
+  // layout de auth pero fuera del publicGuard: requiere sesión + bandera activa.
+  {
+    path: 'auth',
+    component: AuthLayoutComponent,
+    children: [
+      {
+        path: 'cambiar-password',
+        canActivate: [passwordChangeGuard],
+        loadComponent: () =>
+          import('./features/auth/cambiar-password.component').then(
+            (m) => m.CambiarPasswordComponent,
+          ),
+      },
+    ],
+  },
+  // Panel maestro (SUPERADMIN), protegido por su propio guard de rol.
+  {
+    path: 'backoffice',
+    canActivate: [superAdminGuard],
+    loadComponent: () =>
+      import('./features/backoffice/backoffice.component').then((m) => m.BackofficeComponent),
+  },
   // Bloque público: login / recuperar contraseña. Si ya hay sesión activa,
-  // el publicGuard redirige al dashboard.
+  // el publicGuard redirige al destino real según rol/estado.
   {
     path: '',
     canActivate: [publicGuard],

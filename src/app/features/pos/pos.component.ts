@@ -3,8 +3,10 @@ import { Router } from '@angular/router';
 import { CatalogoService } from '../../core/application/services/catalogo.service';
 import { ClientesService } from '../../core/application/services/clientes.service';
 import { PosService } from '../../core/application/services/pos.service';
+import { TenantService } from '../../core/application/services/tenant.service';
 import { ToastService } from '../../core/application/services/toast.service';
 import { MetodoPago, Producto } from '../../core/domain/models';
+import { IconName } from '../../shared/icons/icon.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { BadgeComponent } from '../../shared/ui/badge.component';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -24,7 +26,7 @@ interface CartItem {
 
 interface MetodoPagoOption {
   id: MetodoPago;
-  icon: string;
+  icon: IconName;
 }
 
 @Component({
@@ -46,6 +48,7 @@ export class PosComponent {
   private readonly catalogo = inject(CatalogoService);
   private readonly clientes = inject(ClientesService);
   private readonly pos = inject(PosService);
+  protected readonly tenant = inject(TenantService);
   private readonly toast = inject(ToastService);
   private readonly soles = new SolesPipe();
   private readonly router = inject(Router);
@@ -73,10 +76,10 @@ export class PosComponent {
   readonly clienteSearch = signal('');
 
   readonly metodosPago: MetodoPagoOption[] = [
-    { id: 'Efectivo', icon: '💵' },
-    { id: 'Tarjeta', icon: '💳' },
-    { id: 'Yape', icon: '📱' },
-    { id: 'Plin', icon: '📲' },
+    { id: 'Efectivo', icon: 'money' },
+    { id: 'Tarjeta', icon: 'credit-card' },
+    { id: 'Yape', icon: 'smartphone' },
+    { id: 'Plin', icon: 'smartphone' },
   ];
 
   readonly cliente = computed(() => this.clientes.getById(this.clienteId()));
@@ -167,11 +170,17 @@ export class PosComponent {
 
   cobrar(): void {
     if (this.carrito().length === 0) return;
+    if (!this.clienteId()) {
+      this.toast.error('Selecciona el cliente antes de cobrar');
+      this.showClientePicker.set(true);
+      return;
+    }
+
     const total = this.total();
     this.pos
       .registrarVenta({
         fecha: new Date().toISOString(),
-        clienteId: this.clienteId() || 'c1',
+        clienteId: this.clienteId(),
         items: this.carrito().map((i) => ({
           productoId: i.id,
           nombre: i.nombre,
@@ -180,7 +189,7 @@ export class PosComponent {
         })),
         total,
         metodoPago: this.metodoPago(),
-        vendedor: 'Lucía Paredes',
+        vendedor: this.tenant.tenant().doctorNombre,
       })
       .subscribe(() => {
         this.carrito.set([]);

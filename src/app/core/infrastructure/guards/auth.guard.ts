@@ -12,6 +12,10 @@ export const authGuard: CanActivateFn = (_route, state) => {
   const router = inject(Router);
 
   if (auth.isAuthenticated()) {
+    // Primer login: hasta cambiar la contraseña temporal no se accede a nada más.
+    if (auth.requierePasswordChange()) {
+      return router.createUrlTree(['/auth/cambiar-password']);
+    }
     return true;
   }
 

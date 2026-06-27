@@ -164,13 +164,13 @@
                         class="flex items-center gap-5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50 text-xs"
                       >
                         <div class="flex items-center gap-1.5 text-slate-500">
-                          <span>🌡️</span><span class="tabular-nums">{{ a.temperatura }}°C</span>
+                          <app-icon name="thermometer" [size]="13" /><span class="tabular-nums">{{ a.temperatura }}°C</span>
                         </div>
                         <div class="flex items-center gap-1.5 text-slate-500">
-                          <span>❤️</span><span class="tabular-nums">{{ a.frecCardiaca }} ppm</span>
+                          <app-icon name="heart" [size]="13" /><span class="tabular-nums">{{ a.frecCardiaca }} ppm</span>
                         </div>
                         <div class="flex items-center gap-1.5 text-slate-500">
-                          <span>🫁</span><span class="tabular-nums">{{ a.frecRespiratoria }} rpm</span>
+                          <app-icon name="lungs" [size]="13" /><span class="tabular-nums">{{ a.frecRespiratoria }} rpm</span>
                         </div>
                         <div class="flex-1"></div>
                         <div class="text-slate-600 dark:text-slate-400 font-medium">

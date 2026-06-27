@@ -8,7 +8,7 @@ import { environment } from '../../../../environments/environment';
 export type NuevaCita = Omit<Cita, 'id' | 'estado'>;
 
 /**
- * Repositorio de la agenda de citas. Consume el backend REST (json-server) vía
+ * Repositorio de la agenda de citas. Consume el backend REST (Spring Boot) vía
  * HttpClient y expone las citas como Signals.
  */
 @Injectable({ providedIn: 'root' })
@@ -45,16 +45,13 @@ export class AgendaService {
   }
 
   /**
-   * Registra una nueva cita (POST, estado 'pendiente') y la agrega al Signal
-   * al confirmarse.
-   *
-   * NOTA: este es el punto de extensión para disparar webhooks de
-   * notificación (WhatsApp/email) cuando exista backend real.
+   * Registra una nueva cita (POST) y la agrega al Signal al confirmarse.
+   * El backend asigna el `id` (UUID) y fija `estado = 'pendiente'`, por lo que
+   * el cliente solo envía los datos de la franja.
    */
   agregarCita(datos: NuevaCita): Observable<Cita> {
-    const cita: Cita = { ...datos, id: `cita${this._citas().length + 1}`, estado: 'pendiente' };
     return this.http
-      .post<Cita>(this.apiUrl, cita)
+      .post<Cita>(this.apiUrl, datos)
       .pipe(tap((creada) => this._citas.update((cs) => [...cs, creada])));
   }
 

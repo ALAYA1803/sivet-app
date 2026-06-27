@@ -80,7 +80,7 @@ export class PacientePerfilComponent {
   readonly tabs: Tab[] = [
     { id: 'historia', label: 'Historia clínica', icon: 'activity' },
     { id: 'recetas', label: 'Recetas', icon: 'pill' },
-    { id: 'imagenes', label: 'Estudios', icon: 'image' },
+    { id: 'imagenes', label: 'Estudios', icon: 'file-text' },
     { id: 'ventas', label: 'Ventas', icon: 'receipt' },
   ];
 
