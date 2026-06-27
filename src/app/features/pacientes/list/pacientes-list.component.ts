@@ -93,6 +93,6 @@ export class PacientesListComponent {
   }
 
   exportar(): void {
-    this.exporter.exportToExcel(this.filtered(), 'pacientes');
+    this.exporter.descargarReportePacientes(this.search());
   }
 }

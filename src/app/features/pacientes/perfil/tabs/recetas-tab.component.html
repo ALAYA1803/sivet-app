@@ -8,7 +8,7 @@
 } @else {
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     @for (r of recetas(); track r.receta.id) {
-      <app-card [class.print-area]="printingId() === r.receta.id">
+      <app-card>
         <div
           class="flex items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700/50"
         >

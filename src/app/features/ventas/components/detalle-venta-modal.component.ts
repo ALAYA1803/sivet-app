@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, inject, signal } from '@angular/core';
 import { ClientesService } from '../../../core/application/services/clientes.service';
+import { ExportService } from '../../../core/application/services/export.service';
 import { Venta } from '../../../core/domain/models';
 import { ModalComponent } from '../../../shared/ui/modal.component';
 import { ButtonComponent } from '../../../shared/ui/button.component';
@@ -16,6 +17,7 @@ import { formatVentaId } from '../venta-id.util';
 })
 export class DetalleVentaModalComponent {
   private readonly clientes = inject(ClientesService);
+  private readonly exporter = inject(ExportService);
   private readonly _venta = signal<Venta | null>(null);
 
   @Input() set venta(value: Venta | null) {
@@ -39,6 +41,9 @@ export class DetalleVentaModalComponent {
   }
 
   imprimir(): void {
-    window.print();
+    const venta = this._venta();
+    if (venta) {
+      this.exporter.descargarComprobanteVenta(venta.id);
+    }
   }
 }

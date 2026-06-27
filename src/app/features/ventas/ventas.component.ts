@@ -139,6 +139,7 @@ export class VentasComponent {
   }
 
   exportar(): void {
-    this.exporter.exportToPDF(this.filtered(), 'reporte-ventas');
+    // Las grillas se exportan en Excel; el PDF queda solo para comprobantes/recetas.
+    this.exporter.descargarReporteVentas({ estado: this.estado(), q: this.search() });
   }
 }

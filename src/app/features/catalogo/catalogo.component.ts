@@ -128,6 +128,6 @@ export class CatalogoComponent {
   }
 
   exportar(): void {
-    this.exporter.exportToExcel(this.catalogo.productos(), 'catalogo-inventario');
+    this.exporter.descargarReporteCatalogo();
   }
 }

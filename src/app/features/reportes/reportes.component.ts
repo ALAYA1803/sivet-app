@@ -210,6 +210,6 @@ export class ReportesComponent {
   });
 
   exportarExcel(): void {
-    this.exporter.exportToExcel(this.completadas(), `reporte-ventas-${this.rango()}`);
+    this.exporter.descargarReporteVentas({ rango: this.rango() });
   }
 }

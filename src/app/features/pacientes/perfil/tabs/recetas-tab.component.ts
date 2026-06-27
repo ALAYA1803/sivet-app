@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
 import { PacientesService } from '../../../../core/application/services/pacientes.service';
+import { ExportService } from '../../../../core/application/services/export.service';
 import { Atencion, Receta } from '../../../../core/domain/models';
 import { CardComponent } from '../../../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../../../shared/ui/empty-state.component';
@@ -20,6 +21,7 @@ interface RecetaVista {
 })
 export class RecetasTabComponent {
   private readonly pacientes = inject(PacientesService);
+  private readonly exporter = inject(ExportService);
   private readonly _mascotaId = signal('');
 
   @Input({ required: true }) set mascotaId(value: string) {
@@ -34,15 +36,8 @@ export class RecetasTabComponent {
       .filter((x): x is RecetaVista => x.receta !== undefined),
   );
 
-  /** Id de la receta que se está aislando para imprimir (la única con `.print-area`). */
-  readonly printingId = signal<string | null>(null);
-
+  /** Descarga el PDF de la receta generado por el backend (`GET /recetas/{id}/pdf`). */
   imprimir(recetaId: string): void {
-    this.printingId.set(recetaId);
-    // Deja que Angular aplique la clase `.print-area` antes de abrir el diálogo.
-    setTimeout(() => {
-      window.print();
-      this.printingId.set(null);
-    });
+    this.exporter.descargarRecetaPdf(recetaId);
   }
 }
