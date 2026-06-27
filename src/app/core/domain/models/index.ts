@@ -6,3 +6,6 @@ export * from './producto.model';
 export * from './venta.model';
 export * from './cita.model';
 export * from './dashboard.model';
+export * from './usuario.model';
+export * from './clinica.model';
+export * from './estudio.model';

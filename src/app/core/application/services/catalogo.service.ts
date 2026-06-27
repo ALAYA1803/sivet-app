@@ -1,14 +1,20 @@
-import { Injectable, Signal, computed, signal } from '@angular/core';
+import { Injectable, Signal, computed, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
 import { Producto } from '../../domain/models';
-import { PRODUCTOS_MOCK } from '../../infrastructure/mock/sivet-mock-data';
+import { environment } from '../../../../environments/environment';
 
 /**
- * Repositorio temporal del catálogo (productos y servicios) e inventario.
- * Centraliza las mutaciones de stock para que el POS las reutilice.
+ * Repositorio del catálogo (productos y servicios) e inventario. Consume el
+ * backend REST (json-server) vía HttpClient y centraliza las mutaciones de
+ * stock para que el POS las reutilice.
  */
 @Injectable({ providedIn: 'root' })
 export class CatalogoService {
-  private readonly _productos = signal<Producto[]>(PRODUCTOS_MOCK);
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiUrl}/productos`;
+
+  private readonly _productos = signal<Producto[]>([]);
 
   readonly productos: Signal<readonly Producto[]> = this._productos.asReadonly();
 
@@ -17,39 +23,58 @@ export class CatalogoService {
     this._productos().filter((p) => p.stock !== null && p.stockMin !== null && p.stock <= p.stockMin),
   );
 
+  constructor() {
+    this.cargar();
+  }
+
+  /** Carga inicial desde el backend. */
+  private cargar(): void {
+    this.http.get<Producto[]>(this.apiUrl).subscribe((ps) => this._productos.set(ps));
+  }
+
   getById(id: string): Producto | undefined {
     return this._productos().find((p) => p.id === id);
   }
 
-  /** Registra un nuevo producto (le asigna el id) y lo antepone a la lista. */
-  agregarProducto(datos: Omit<Producto, 'id'>): Producto {
+  /** Registra un nuevo producto (POST) y lo antepone a la lista al confirmarse. */
+  agregarProducto(datos: Omit<Producto, 'id'>): Observable<Producto> {
     const producto: Producto = { ...datos, id: `p${this._productos().length + 1}` };
-    this._productos.update((ps) => [producto, ...ps]);
-    return producto;
+    return this.http
+      .post<Producto>(this.apiUrl, producto)
+      .pipe(tap((creado) => this._productos.update((ps) => [creado, ...ps])));
   }
 
-  /** Actualiza los datos de un producto existente. */
-  actualizarProducto(id: string, datos: Omit<Producto, 'id'>): void {
-    this._productos.update((ps) => ps.map((p) => (p.id === id ? { ...datos, id } : p)));
+  /** Actualiza los datos de un producto existente (PUT). */
+  actualizarProducto(id: string, datos: Omit<Producto, 'id'>): Observable<Producto> {
+    const producto: Producto = { ...datos, id };
+    return this.http
+      .put<Producto>(`${this.apiUrl}/${id}`, producto)
+      .pipe(tap((upd) => this._productos.update((ps) => ps.map((p) => (p.id === id ? upd : p)))));
   }
 
-  /** Descuenta `cantidad` del stock (ignora servicios sin inventario). */
+  /** Descuenta `cantidad` del stock vía PATCH (ignora servicios sin inventario). */
   descontarStock(productoId: string, cantidad: number): void {
-    this._productos.update((productos) =>
-      productos.map((p) =>
-        p.id === productoId && p.stock !== null
-          ? { ...p, stock: Math.max(0, p.stock - cantidad) }
-          : p,
-      ),
-    );
+    const producto = this.getById(productoId);
+    if (!producto || producto.stock === null) return;
+    const stock = Math.max(0, producto.stock - cantidad);
+    this.patchStock(productoId, stock);
   }
 
-  /** Repone `cantidad` al stock (p. ej. al anular una venta). */
+  /** Repone `cantidad` al stock vía PATCH (p. ej. al anular una venta). */
   restaurarStock(productoId: string, cantidad: number): void {
-    this._productos.update((productos) =>
-      productos.map((p) =>
-        p.id === productoId && p.stock !== null ? { ...p, stock: p.stock + cantidad } : p,
-      ),
-    );
+    const producto = this.getById(productoId);
+    if (!producto || producto.stock === null) return;
+    this.patchStock(productoId, producto.stock + cantidad);
+  }
+
+  /** PATCH del stock en el backend + actualización del Signal local. */
+  private patchStock(productoId: string, stock: number): void {
+    this.http
+      .patch<Producto>(`${this.apiUrl}/${productoId}`, { stock })
+      .subscribe((upd) =>
+        this._productos.update((ps) =>
+          ps.map((p) => (p.id === productoId ? { ...p, stock: upd.stock } : p)),
+        ),
+      );
   }
 }

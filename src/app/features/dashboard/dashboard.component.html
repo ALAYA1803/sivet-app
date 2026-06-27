@@ -2,15 +2,15 @@
   <!-- Header -->
   <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-7">
     <div>
-      <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1">
+      <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1 capitalize">
         <app-icon name="calendar" [size]="14" />
-        Martes, 26 de mayo · 12:47 PM
+        {{ fechaHoy() }}
       </div>
       <h1 class="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-50 tracking-tight">
-        Buenos días, Dra. Espinoza
+        {{ saludo() }}@if (doctorNombre()) {, {{ doctorNombre() }}}
       </h1>
       <p class="text-slate-500 dark:text-slate-400 mt-1">
-        Resumen de actividad de Veterinaria SIVET — Sede San Borja
+        Resumen de actividad de {{ clinicaNombre() }}@if (sede()) { — Sede {{ sede() }}}
       </p>
     </div>
     <div class="flex gap-2">
@@ -28,7 +28,6 @@
     <app-kpi-card
       label="Ingresos del día"
       [value]="ingresosHoy() | soles"
-      delta="+18%"
       iconBg="bg-emerald-50 dark:bg-emerald-500/15"
       [hint]="ventasHoy().length + ' ventas registradas'"
     >
@@ -37,10 +36,9 @@
 
     <app-kpi-card
       label="Pacientes hoy"
-      [value]="pacientesHoy"
-      delta="+3"
+      [value]="pacientesHoy()"
       iconBg="bg-[var(--primary-50)]"
-      hint="2 cirugías programadas"
+      hint="Atendidos según historia clínica"
     >
       <app-icon icon name="paw" [size]="20" class="text-[var(--primary-700)]" />
     </app-kpi-card>

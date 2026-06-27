@@ -8,6 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ClientesService } from '../../core/application/services/clientes.service';
+import { TenantService } from '../../core/application/services/tenant.service';
 import { PacientesService } from '../../core/application/services/pacientes.service';
 import { ToastService } from '../../core/application/services/toast.service';
 import { Cliente, Mascota, RecetaItem, TIPOS_ATENCION, TipoAtencion } from '../../core/domain/models';
@@ -47,6 +48,7 @@ export class AtencionComponent {
   private readonly fb = inject(FormBuilder);
   private readonly pacientes = inject(PacientesService);
   private readonly clientes = inject(ClientesService);
+  private readonly tenant = inject(TenantService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -80,6 +82,14 @@ export class AtencionComponent {
     const p = this.paciente();
     return p ? this.clientes.getById(p.clienteId) : undefined;
   });
+
+  /** Atención más reciente del paciente seleccionado (de la historia clínica). */
+  readonly ultimaAtencion = computed(() => this.pacientes.getHistoria(this.pacienteId())[0]);
+
+  /** Fecha corta en español (p. ej. "24 may"). */
+  fechaCorta(iso: string): string {
+    return new Intl.DateTimeFormat('es-PE', { day: 'numeric', month: 'short' }).format(new Date(iso));
+  }
 
   readonly filteredPacientes = computed<PacienteRow[]>(() => {
     const q = this.searchPaciente().trim().toLowerCase();
@@ -202,23 +212,25 @@ export class AtencionComponent {
       ? (v.receta as RecetaItem[]).filter((m) => m.medicamento.trim().length > 0)
       : [];
 
-    const nueva = this.pacientes.registrarAtencion(
-      {
-        mascotaId: paciente.id,
-        fecha: new Date().toISOString(),
-        tipo: v.tipo,
-        motivo: v.motivo,
-        diagnostico: v.diagnostico,
-        tratamiento: v.tratamiento,
-        veterinario: 'Dra. Carla Espinoza',
-        temperatura: parseFloat(v.temperatura),
-        frecCardiaca: parseInt(v.frecCardiaca, 10),
-        frecRespiratoria: parseInt(v.frecRespiratoria, 10),
-      },
-      recetaItems,
-    );
-
-    this.toast.success('Atención registrada correctamente');
-    this.router.navigate(['/pacientes', nueva.mascotaId]);
+    this.pacientes
+      .registrarAtencion(
+        {
+          mascotaId: paciente.id,
+          fecha: new Date().toISOString(),
+          tipo: v.tipo,
+          motivo: v.motivo,
+          diagnostico: v.diagnostico,
+          tratamiento: v.tratamiento,
+          veterinario: this.tenant.tenant().doctorNombre,
+          temperatura: parseFloat(v.temperatura),
+          frecCardiaca: parseInt(v.frecCardiaca, 10),
+          frecRespiratoria: parseInt(v.frecRespiratoria, 10),
+        },
+        recetaItems,
+      )
+      .subscribe((nueva) => {
+        this.toast.success('Atención registrada correctamente');
+        this.router.navigate(['/pacientes', nueva.mascotaId]);
+      });
   }
 }

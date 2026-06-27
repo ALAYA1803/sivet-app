@@ -253,16 +253,20 @@ export class NuevaCitaModalComponent {
 
     const v = this.form.getRawValue();
     // Punto de extensión futuro: aquí se dispararán los webhooks de WhatsApp/email.
-    this.agenda.agregarCita({
-      mascotaId: paciente.mascota.id,
-      clienteId: paciente.clienteId,
-      fecha: v.fecha,
-      hora: v.hora,
-      motivo: v.motivo,
-    });
-
-    this.toast.success(`Cita agendada · ${paciente.mascota.nombre} el ${v.fecha} a las ${v.hora}`);
-    this.saved.emit(v.fecha);
-    this.close.emit();
+    this.agenda
+      .agregarCita({
+        mascotaId: paciente.mascota.id,
+        clienteId: paciente.clienteId,
+        fecha: v.fecha,
+        hora: v.hora,
+        motivo: v.motivo,
+      })
+      .subscribe(() => {
+        this.toast.success(
+          `Cita agendada · ${paciente.mascota.nombre} el ${v.fecha} a las ${v.hora}`,
+        );
+        this.saved.emit(v.fecha);
+        this.close.emit();
+      });
   }
 }

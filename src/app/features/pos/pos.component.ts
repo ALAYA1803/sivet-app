@@ -168,23 +168,26 @@ export class PosComponent {
   cobrar(): void {
     if (this.carrito().length === 0) return;
     const total = this.total();
-    this.pos.registrarVenta({
-      fecha: new Date().toISOString(),
-      clienteId: this.clienteId() || 'c1',
-      items: this.carrito().map((i) => ({
-        productoId: i.id,
-        nombre: i.nombre,
-        cantidad: i.cantidad,
-        precio: i.precio,
-      })),
-      total: this.total(),
-      metodoPago: this.metodoPago(),
-      vendedor: 'Lucía Paredes',
-    });
-    this.carrito.set([]);
-    this.clienteId.set('');
-    this.recibido.set('');
-    this.toast.success(`Venta de ${this.soles.transform(total)} registrada correctamente`);
+    this.pos
+      .registrarVenta({
+        fecha: new Date().toISOString(),
+        clienteId: this.clienteId() || 'c1',
+        items: this.carrito().map((i) => ({
+          productoId: i.id,
+          nombre: i.nombre,
+          cantidad: i.cantidad,
+          precio: i.precio,
+        })),
+        total,
+        metodoPago: this.metodoPago(),
+        vendedor: 'Lucía Paredes',
+      })
+      .subscribe(() => {
+        this.carrito.set([]);
+        this.clienteId.set('');
+        this.recibido.set('');
+        this.toast.success(`Venta de ${this.soles.transform(total)} registrada correctamente`);
+      });
   }
 
   verHistorial(): void {

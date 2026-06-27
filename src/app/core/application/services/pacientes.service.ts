@@ -1,36 +1,61 @@
-import { Injectable, Signal, computed, signal } from '@angular/core';
-import { Atencion, Mascota, Receta, RecetaItem } from '../../domain/models';
-import {
-  ATENCIONES_MOCK,
-  MASCOTAS_MOCK,
-  RECETAS_MOCK,
-} from '../../infrastructure/mock/sivet-mock-data';
+import { Injectable, Signal, computed, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, switchMap, tap } from 'rxjs';
+import { Atencion, Estudio, Mascota, Receta, RecetaItem } from '../../domain/models';
+import { environment } from '../../../../environments/environment';
 
 /**
- * Repositorio temporal del módulo clínico: pacientes (mascotas),
- * su historia clínica (atenciones) y las recetas emitidas.
+ * Repositorio del módulo clínico: pacientes (mascotas), su historia clínica
+ * (atenciones) y las recetas emitidas. Consume el backend REST (json-server)
+ * vía HttpClient y expone los datos como Signals.
  */
 @Injectable({ providedIn: 'root' })
 export class PacientesService {
-  private readonly _mascotas = signal<Mascota[]>(MASCOTAS_MOCK);
-  private readonly _atenciones = signal<Atencion[]>(ATENCIONES_MOCK);
-  private readonly _recetas = signal<Receta[]>(RECETAS_MOCK);
+  private readonly http = inject(HttpClient);
+  private readonly mascotasUrl = `${environment.apiUrl}/mascotas`;
+  private readonly atencionesUrl = `${environment.apiUrl}/atenciones`;
+  private readonly recetasUrl = `${environment.apiUrl}/recetas`;
+  private readonly estudiosUrl = `${environment.apiUrl}/estudios`;
+
+  private readonly _mascotas = signal<Mascota[]>([]);
+  private readonly _atenciones = signal<Atencion[]>([]);
+  private readonly _recetas = signal<Receta[]>([]);
+  private readonly _estudios = signal<Estudio[]>([]);
 
   readonly mascotas: Signal<readonly Mascota[]> = this._mascotas.asReadonly();
   readonly atenciones: Signal<readonly Atencion[]> = this._atenciones.asReadonly();
   readonly recetas: Signal<readonly Receta[]> = this._recetas.asReadonly();
+  readonly estudios: Signal<readonly Estudio[]> = this._estudios.asReadonly();
 
   readonly total = computed(() => this._mascotas().length);
+
+  constructor() {
+    this.cargar();
+  }
+
+  /** Carga inicial de mascotas, atenciones y recetas desde el backend. */
+  private cargar(): void {
+    this.http.get<Mascota[]>(this.mascotasUrl).subscribe((ms) => this._mascotas.set(ms));
+    this.http.get<Atencion[]>(this.atencionesUrl).subscribe((as) => this._atenciones.set(as));
+    this.http.get<Receta[]>(this.recetasUrl).subscribe((rs) => this._recetas.set(rs));
+    this.http.get<Estudio[]>(this.estudiosUrl).subscribe((es) => this._estudios.set(es));
+  }
+
+  /** Estudios complementarios de una mascota. */
+  getEstudios(mascotaId: string): Estudio[] {
+    return this._estudios().filter((e) => e.mascotaId === mascotaId);
+  }
 
   getMascota(id: string): Mascota | undefined {
     return this._mascotas().find((m) => m.id === id);
   }
 
-  /** Registra una nueva mascota (le asigna el id) y la antepone a la lista. */
-  agregarMascota(datos: Omit<Mascota, 'id'>): Mascota {
+  /** Registra una nueva mascota (POST) y la antepone a la lista al confirmarse. */
+  agregarMascota(datos: Omit<Mascota, 'id'>): Observable<Mascota> {
     const mascota: Mascota = { ...datos, id: `m${this._mascotas().length + 1}` };
-    this._mascotas.update((ms) => [mascota, ...ms]);
-    return mascota;
+    return this.http
+      .post<Mascota>(this.mascotasUrl, mascota)
+      .pipe(tap((creada) => this._mascotas.update((ms) => [creada, ...ms])));
   }
 
   /** Mascotas pertenecientes a un cliente. */
@@ -51,23 +76,31 @@ export class PacientesService {
 
   /**
    * Registra una nueva atención (y su receta opcional) en la historia clínica.
-   * La atención es inalterable una vez creada.
+   * Si hay receta, primero la crea (POST /recetas) y luego la atención
+   * (POST /atenciones) referenciándola. La atención es inalterable una vez creada.
    */
   registrarAtencion(
     atencion: Omit<Atencion, 'id' | 'recetaId'>,
     recetaItems: RecetaItem[] = [],
-  ): Atencion {
+  ): Observable<Atencion> {
     const id = `a${this._atenciones().length + 1}`;
-    let recetaId: string | undefined;
 
     if (recetaItems.length > 0) {
-      recetaId = `r${this._recetas().length + 1}`;
+      const recetaId = `r${this._recetas().length + 1}`;
       const receta: Receta = { id: recetaId, atencionId: id, items: recetaItems };
-      this._recetas.update((rs) => [...rs, receta]);
+      return this.http.post<Receta>(this.recetasUrl, receta).pipe(
+        tap((creada) => this._recetas.update((rs) => [...rs, creada])),
+        switchMap(() => this.postAtencion({ ...atencion, id, recetaId })),
+      );
     }
 
-    const nueva: Atencion = { ...atencion, id, recetaId };
-    this._atenciones.update((list) => [nueva, ...list]);
-    return nueva;
+    return this.postAtencion({ ...atencion, id });
+  }
+
+  /** POST de la atención + inserción optimista en el Signal local. */
+  private postAtencion(nueva: Atencion): Observable<Atencion> {
+    return this.http
+      .post<Atencion>(this.atencionesUrl, nueva)
+      .pipe(tap((creada) => this._atenciones.update((list) => [creada, ...list])));
   }
 }

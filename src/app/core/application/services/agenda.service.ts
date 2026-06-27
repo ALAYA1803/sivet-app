@@ -1,24 +1,21 @@
-import { Injectable, Signal, signal } from '@angular/core';
+import { Injectable, Signal, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
 import { Cita } from '../../domain/models';
+import { environment } from '../../../../environments/environment';
 
 /** Datos necesarios para crear una cita; el id y el estado los asigna el servicio. */
 export type NuevaCita = Omit<Cita, 'id' | 'estado'>;
 
-/** Devuelve la fecha de hoy en formato ISO "YYYY-MM-DD" (zona local). */
-function hoyISO(): string {
-  const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
-}
-
 /**
- * Repositorio temporal de la agenda de citas.
- * Hoy gestiona datos mock vía Signals; mañana hará llamadas HTTP al backend
- * sin cambiar su API pública.
+ * Repositorio de la agenda de citas. Consume el backend REST (json-server) vía
+ * HttpClient y expone las citas como Signals.
  */
 @Injectable({ providedIn: 'root' })
 export class AgendaService {
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiUrl}/citas`;
+
   /** Franjas horarias disponibles (bloques de 30 min). */
   readonly horarios: readonly string[] = [
     '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
@@ -26,14 +23,19 @@ export class AgendaService {
     '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00',
   ];
 
-  private readonly _citas = signal<Cita[]>([
-    { id: 'cita1', mascotaId: 'm1', clienteId: 'c1', fecha: hoyISO(), hora: '09:30', motivo: 'Control post-operatorio', estado: 'pendiente' },
-    { id: 'cita2', mascotaId: 'm3', clienteId: 'c2', fecha: hoyISO(), hora: '11:00', motivo: 'Vacunación triple felina', estado: 'pendiente' },
-    { id: 'cita3', mascotaId: 'm4', clienteId: 'c3', fecha: hoyISO(), hora: '16:00', motivo: 'Consulta dermatológica', estado: 'pendiente' },
-  ]);
+  private readonly _citas = signal<Cita[]>([]);
 
   /** Lista reactiva de citas (solo lectura). */
   readonly citas: Signal<readonly Cita[]> = this._citas.asReadonly();
+
+  constructor() {
+    this.cargar();
+  }
+
+  /** Carga inicial desde el backend. */
+  private cargar(): void {
+    this.http.get<Cita[]>(this.apiUrl).subscribe((cs) => this._citas.set(cs));
+  }
 
   /** Horas ya ocupadas (no canceladas) en una fecha dada. */
   horasOcupadas(fecha: string): string[] {
@@ -43,19 +45,23 @@ export class AgendaService {
   }
 
   /**
-   * Registra una nueva cita (le asigna id y estado 'pendiente').
+   * Registra una nueva cita (POST, estado 'pendiente') y la agrega al Signal
+   * al confirmarse.
    *
    * NOTA: este es el punto de extensión para disparar webhooks de
-   * notificación (WhatsApp/email) cuando exista backend — la firma
-   * pública no cambiará.
+   * notificación (WhatsApp/email) cuando exista backend real.
    */
-  agregarCita(datos: NuevaCita): Cita {
+  agregarCita(datos: NuevaCita): Observable<Cita> {
     const cita: Cita = { ...datos, id: `cita${this._citas().length + 1}`, estado: 'pendiente' };
-    this._citas.update((cs) => [...cs, cita]);
-    return cita;
+    return this.http
+      .post<Cita>(this.apiUrl, cita)
+      .pipe(tap((creada) => this._citas.update((cs) => [...cs, creada])));
   }
 
+  /** Cambia el estado de una cita (PATCH) y refleja el cambio en el Signal. */
   cambiarEstado(id: string, estado: Cita['estado']): void {
-    this._citas.update((cs) => cs.map((c) => (c.id === id ? { ...c, estado } : c)));
+    this.http
+      .patch<Cita>(`${this.apiUrl}/${id}`, { estado })
+      .subscribe(() => this._citas.update((cs) => cs.map((c) => (c.id === id ? { ...c, estado } : c))));
   }
 }

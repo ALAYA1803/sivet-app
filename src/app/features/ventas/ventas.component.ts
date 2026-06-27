@@ -128,9 +128,10 @@ export class VentasComponent {
   confirmarAnulacion(motivo: string): void {
     const venta = this.ventaAnular();
     if (!venta) return;
-    this.pos.anularVenta(venta.id, motivo);
-    this.ventaAnular.set(null);
-    this.toast.success('Venta anulada · Inventario restaurado');
+    this.pos.anularVenta(venta.id, motivo).subscribe(() => {
+      this.ventaAnular.set(null);
+      this.toast.success('Venta anulada · Inventario restaurado');
+    });
   }
 
   nuevaVenta(): void {

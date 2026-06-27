@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { Router } from '@angular/router';
 import { CatalogoService } from '../../core/application/services/catalogo.service';
 import { DashboardService } from '../../core/application/services/dashboard.service';
+import { PacientesService } from '../../core/application/services/pacientes.service';
 import { PosService } from '../../core/application/services/pos.service';
+import { TenantService } from '../../core/application/services/tenant.service';
 import { Especie } from '../../core/domain/models';
 import { CardComponent } from '../../shared/ui/card.component';
 import { BadgeComponent } from '../../shared/ui/badge.component';
@@ -54,19 +56,61 @@ interface StockCriticoVista {
 export class DashboardComponent {
   private readonly dashboard = inject(DashboardService);
   private readonly catalogo = inject(CatalogoService);
+  private readonly pacientes = inject(PacientesService);
   private readonly pos = inject(PosService);
+  private readonly tenant = inject(TenantService);
   private readonly router = inject(Router);
-
-  /** Pacientes atendidos hoy (constante en el prototipo). */
-  readonly pacientesHoy = 11;
 
   readonly flujoPacientes = this.dashboard.flujoPacientes;
   readonly metodosPago = this.dashboard.metodosPago;
 
+  /** Identidad del usuario y la clínica activos (del login, no en duro). */
+  readonly doctorNombre = computed(() => this.tenant.tenant().doctorNombre);
+  readonly clinicaNombre = computed(() => this.tenant.tenant().clinicaNombre);
+  readonly sede = computed(() => this.tenant.tenant().sede);
+
+  /**
+   * Día de referencia ("hoy"): la fecha de actividad más reciente del dataset
+   * (ventas + atenciones). Ancla los cálculos a los datos reales del backend
+   * en lugar de a una fecha escrita en duro.
+   */
+  private readonly hoy = computed(() => {
+    const fechas = [
+      ...this.pos.ventas().map((v) => new Date(v.fecha).getTime()),
+      ...this.pacientes.atenciones().map((a) => new Date(a.fecha).getTime()),
+    ];
+    return fechas.length ? new Date(Math.max(...fechas)) : new Date();
+  });
+
+  /** Saludo según la hora real del reloj. */
+  readonly saludo = computed(() => {
+    const h = new Date().getHours();
+    return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+  });
+
+  /** Fecha de referencia formateada en español. */
+  readonly fechaHoy = computed(() =>
+    new Intl.DateTimeFormat('es-PE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(this.hoy()),
+  );
+
+  /** Pacientes únicos atendidos en el día de referencia. */
+  readonly pacientesHoy = computed(() => {
+    const ids = new Set(
+      this.pacientes
+        .atenciones()
+        .filter((a) => this.esMismoDia(a.fecha))
+        .map((a) => a.mascotaId),
+    );
+    return ids.size;
+  });
+
   readonly ventasHoy = computed(() =>
-    this.pos
-      .ventas()
-      .filter((v) => v.fecha.startsWith('2026-05-26') && v.estado === 'completada'),
+    this.pos.ventas().filter((v) => v.estado === 'completada' && this.esMismoDia(v.fecha)),
   );
 
   readonly ingresosHoy = computed(() =>
@@ -76,7 +120,8 @@ export class DashboardComponent {
   readonly citas = computed<CitaVista[]>(() =>
     this.dashboard.citasHoy().map((c) => ({
       ...c,
-      especie: c.mascota === 'Nala' || c.mascota === 'Pelusa' ? 'Felino' : 'Canino',
+      // Especie inferida desde la colección real de mascotas (por nombre).
+      especie: this.pacientes.mascotas().find((m) => m.nombre === c.mascota)?.especie ?? 'Canino',
     })),
   );
 
@@ -98,6 +143,11 @@ export class DashboardComponent {
 
   goTo(path: string): void {
     this.router.navigate([path]);
+  }
+
+  /** ¿La fecha ISO cae en el día de referencia ("hoy")? */
+  private esMismoDia(iso: string): boolean {
+    return new Date(iso).toDateString() === this.hoy().toDateString();
   }
 
   /** Ancho de la barra de stock, tope 100%. */

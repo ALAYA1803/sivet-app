@@ -167,15 +167,17 @@ export class ProductoModalComponent {
       unidad: v.unidad,
     };
 
-    if (this.mode === 'editar' && this._producto) {
-      this.catalogo.actualizarProducto(this._producto.id, datos);
-      this.toast.success(`${datos.nombre} fue actualizado`);
-    } else {
-      this.catalogo.agregarProducto(datos);
-      this.toast.success(`${datos.nombre} fue agregado al catálogo`);
-    }
+    const esEdicion = this.mode === 'editar' && this._producto;
+    const peticion$ = esEdicion
+      ? this.catalogo.actualizarProducto(this._producto!.id, datos)
+      : this.catalogo.agregarProducto(datos);
 
-    this.saved.emit();
-    this.close.emit();
+    peticion$.subscribe(() => {
+      this.toast.success(
+        esEdicion ? `${datos.nombre} fue actualizado` : `${datos.nombre} fue agregado al catálogo`,
+      );
+      this.saved.emit();
+      this.close.emit();
+    });
   }
 }

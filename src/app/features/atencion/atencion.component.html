@@ -416,10 +416,16 @@
           </div>
           <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50">
             <div class="text-xs font-medium text-slate-500 mb-2">Última atención</div>
-            <div class="text-sm">
-              <div class="font-medium text-slate-800 dark:text-slate-200">24 mayo · Gastritis</div>
-              <div class="text-xs text-slate-500 mt-0.5">Dra. Espinoza · Omeprazol 5d</div>
-            </div>
+            @if (ultimaAtencion(); as u) {
+              <div class="text-sm">
+                <div class="font-medium text-slate-800 dark:text-slate-200">
+                  {{ fechaCorta(u.fecha) }} · {{ u.tipo }}
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5">{{ u.veterinario }}</div>
+              </div>
+            } @else {
+              <div class="text-sm text-slate-400">Sin atenciones previas</div>
+            }
           </div>
           <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
             <div

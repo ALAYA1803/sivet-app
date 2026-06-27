@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Output, inject } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { switchMap } from 'rxjs';
 import { ClientesService } from '../../core/application/services/clientes.service';
 import { PacientesService } from '../../core/application/services/pacientes.service';
 import { ToastService } from '../../core/application/services/toast.service';
@@ -181,30 +182,36 @@ export class NuevoPacienteModalComponent {
 
     const { mascota, cliente } = this.form.getRawValue();
 
-    const nuevoCliente = this.clientes.agregarCliente({
-      nombre: cliente.nombre,
-      dni: cliente.dni,
-      telefono: cliente.telefono,
-      email: cliente.email,
-      direccion: cliente.direccion,
-    });
-
-    const nuevaMascota = this.pacientes.agregarMascota({
-      nombre: mascota.nombre,
-      especie: mascota.especie,
-      raza: mascota.raza,
-      sexo: mascota.sexo,
-      edad: mascota.edad,
-      peso: parseFloat(mascota.peso) || 0,
-      color: mascota.color,
-      clienteId: nuevoCliente.id,
-      foto: null,
-      esterilizada: mascota.esterilizada,
-      microchip: mascota.microchip || undefined,
-    });
-
-    this.toast.success(`${nuevaMascota.nombre} fue registrado correctamente`);
-    this.saved.emit(nuevaMascota.id);
-    this.close.emit();
+    // Primero se crea el dueño (POST) y, con su id, la mascota (POST encadenado).
+    this.clientes
+      .agregarCliente({
+        nombre: cliente.nombre,
+        dni: cliente.dni,
+        telefono: cliente.telefono,
+        email: cliente.email,
+        direccion: cliente.direccion,
+      })
+      .pipe(
+        switchMap((nuevoCliente) =>
+          this.pacientes.agregarMascota({
+            nombre: mascota.nombre,
+            especie: mascota.especie,
+            raza: mascota.raza,
+            sexo: mascota.sexo,
+            edad: mascota.edad,
+            peso: parseFloat(mascota.peso) || 0,
+            color: mascota.color,
+            clienteId: nuevoCliente.id,
+            foto: null,
+            esterilizada: mascota.esterilizada,
+            microchip: mascota.microchip || undefined,
+          }),
+        ),
+      )
+      .subscribe((nuevaMascota) => {
+        this.toast.success(`${nuevaMascota.nombre} fue registrado correctamente`);
+        this.saved.emit(nuevaMascota.id);
+        this.close.emit();
+      });
   }
 }

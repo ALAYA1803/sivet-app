@@ -253,7 +253,7 @@
         <app-recetas-tab [mascotaId]="mascotaId()" />
       }
       @case ('imagenes') {
-        <app-estudios-tab />
+        <app-estudios-tab [mascotaId]="mascotaId()" />
       }
       @case ('ventas') {
         @if (cliente(); as c) {

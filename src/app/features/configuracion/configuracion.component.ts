@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ThemeService } from '../../core/application/services/theme.service';
+import { TenantService } from '../../core/application/services/tenant.service';
 import { CardComponent } from '../../shared/ui/card.component';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { InputComponent } from '../../shared/ui/input.component';
@@ -39,16 +40,12 @@ import { IconComponent } from '../../shared/icons/icon.component';
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <app-input label="Nombre de la clínica" [value]="'Veterinaria SIVET'" />
-          <app-input label="RUC" [value]="'20512345678'" />
-          <app-input label="Teléfono" icon="phone" [value]="'(01) 234-5678'" />
-          <app-input label="Email" icon="mail" [value]="'contacto@sivet.pe'" />
+          <app-input label="Nombre de la clínica" [value]="clinica().clinicaNombre" />
+          <app-input label="RUC" [value]="clinica().ruc" />
+          <app-input label="Teléfono" icon="phone" [value]="clinica().telefono" />
+          <app-input label="Email" icon="mail" [value]="clinica().email" />
           <div class="col-span-2">
-            <app-input
-              label="Dirección"
-              icon="map-pin"
-              [value]="'Av. San Borja Sur 1234, San Borja, Lima'"
-            />
+            <app-input label="Dirección" icon="map-pin" [value]="clinica().direccion" />
           </div>
         </div>
 
@@ -117,4 +114,8 @@ import { IconComponent } from '../../shared/icons/icon.component';
 })
 export class ConfiguracionComponent {
   readonly theme = inject(ThemeService);
+  private readonly tenant = inject(TenantService);
+
+  /** Datos de la clínica activa (traídos del backend vía login). */
+  readonly clinica = this.tenant.tenant;
 }
