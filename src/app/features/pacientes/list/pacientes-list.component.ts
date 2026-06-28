@@ -107,6 +107,15 @@ export class PacientesListComponent {
     this.router.navigate(['/pacientes', id]);
   }
 
+  /**
+   * Acción rápida: inicia una consulta médica para esta mascota. Lleva al
+   * formulario de atención con el paciente preseleccionado vía query param.
+   */
+  iniciarAtencion(mascota: Mascota, event: Event): void {
+    event.stopPropagation();
+    this.router.navigate(['/atencion'], { queryParams: { mascotaId: mascota.id } });
+  }
+
   /** Abre el modal en modo edición con los datos de la mascota. */
   editar(mascota: Mascota, event: Event): void {
     event.stopPropagation();

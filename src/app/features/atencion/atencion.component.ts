@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   FormArray,
   FormBuilder,
@@ -53,6 +54,7 @@ export class AtencionComponent {
   private readonly dashboard = inject(DashboardService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly tiposAtencion = TIPOS_ATENCION;
   readonly examenFisico = [
@@ -126,6 +128,17 @@ export class AtencionComponent {
     effect(() => {
       const p = this.paciente();
       if (p) this.form.controls['peso'].setValue(String(p.peso));
+    });
+
+    // Pre-selección desde el buscador global / acción "Iniciar atención":
+    // si la URL trae `?mascotaId=`, se selecciona el paciente y se avanza al
+    // paso del motivo para que el usuario solo escriba síntomas y diagnóstico.
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const mascotaId = params.get('mascotaId');
+      if (mascotaId) {
+        this.pacienteId.set(mascotaId);
+        this.step.set(2);
+      }
     });
   }
 

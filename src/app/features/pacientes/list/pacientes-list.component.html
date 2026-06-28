@@ -111,6 +111,14 @@
               <div class="flex items-center justify-end gap-1">
                 <button
                   type="button"
+                  (click)="iniciarAtencion(row.mascota, $event)"
+                  title="Iniciar atención"
+                  class="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium bg-[var(--primary-50)] hover:bg-[var(--primary-100)] text-[var(--primary-700)]"
+                >
+                  <app-icon name="stethoscope" [size]="14" />Iniciar atención
+                </button>
+                <button
+                  type="button"
                   (click)="editar(row.mascota, $event)"
                   title="Editar paciente"
                   class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"
