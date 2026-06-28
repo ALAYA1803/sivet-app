@@ -135,20 +135,32 @@ export class DashboardComponent {
     return fechas.length ? new Date(Math.max(...fechas)) : new Date();
   });
 
-  /** Saludo según la hora real del reloj. */
+  /**
+   * Fecha "visual" de la cabecera: el reloj **local** del navegador, totalmente
+   * desacoplado del backend. Evita el desfase nocturno que producía anclar la
+   * cabecera a un timestamp UTC del servidor (`hoy()`, que sigue usándose solo
+   * para los KPIs basados en datos reales).
+   */
+  readonly fechaActual = new Date();
+
+  /** Saludo según la hora real del reloj local. */
   readonly saludo = computed(() => {
-    const h = new Date().getHours();
+    const h = this.fechaActual.getHours();
     return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
   });
 
-  /** Fecha de referencia formateada en español. */
+  /**
+   * Fecha local formateada en español. `Intl.DateTimeFormat` usa la zona horaria
+   * del navegador por defecto (no se fuerza ninguna externa), por lo que siempre
+   * muestra el día físico del usuario.
+   */
   readonly fechaHoy = computed(() =>
     new Intl.DateTimeFormat('es-PE', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-    }).format(this.hoy()),
+    }).format(this.fechaActual),
   );
 
   /** Pacientes únicos atendidos en el día de referencia. */
