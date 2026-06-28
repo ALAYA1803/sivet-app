@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AgendaService } from '../../core/application/services/agenda.service';
 import { PacientesService } from '../../core/application/services/pacientes.service';
@@ -148,8 +149,8 @@ interface PacienteOption {
 
       <div footer>
         <app-button variant="secondary" (clicked)="cancelar()">Cancelar</app-button>
-        <app-button variant="primary" (clicked)="guardar()">
-          <app-icon icon name="calendar" [size]="16" />Agendar cita
+        <app-button variant="primary" [disabled]="isSaving()" (clicked)="guardar()">
+          <app-icon icon name="calendar" [size]="16" />{{ isSaving() ? 'Agendando...' : 'Agendar cita' }}
         </app-button>
       </div>
     </app-modal>
@@ -173,6 +174,8 @@ export class NuevaCitaModalComponent {
 
   readonly search = signal('');
   readonly pacienteSeleccionado = signal<PacienteOption | null>(null);
+  /** Evita el doble envío y refleja el estado de carga del botón. */
+  readonly isSaving = signal(false);
 
   readonly form: FormGroup = this.fb.group({
     pacienteId: ['', Validators.required],
@@ -205,11 +208,26 @@ export class NuevaCitaModalComponent {
       .slice(0, 6);
   });
 
-  /** Horas libres = horario total menos las ya ocupadas ese día. */
+  /**
+   * Horas libres = horario total menos las ya ocupadas ese día y, si la fecha
+   * elegida es **hoy** (reloj local del navegador), menos las que ya pasaron.
+   * Así se bloquean de forma proactiva las franjas en el pasado (evita el 422).
+   */
   readonly horasDisponibles = computed<string[]>(() => {
     const fecha = this.fechaValue() ?? '';
     const ocupadas = new Set(this.agenda.horasOcupadas(fecha));
-    return this.agenda.horarios.filter((h) => !ocupadas.has(h));
+    const esHoy = fecha === this.hoyISO();
+    const ahora = new Date();
+    const minutosAhora = ahora.getHours() * 60 + ahora.getMinutes();
+
+    return this.agenda.horarios.filter((h) => {
+      if (ocupadas.has(h)) return false;
+      if (esHoy) {
+        const [hh, mm] = h.split(':').map(Number);
+        if (hh * 60 + mm <= minutosAhora) return false;
+      }
+      return true;
+    });
   });
 
   constructor() {
@@ -253,6 +271,9 @@ export class NuevaCitaModalComponent {
       return;
     }
 
+    if (this.isSaving()) return;
+    this.isSaving.set(true);
+
     const v = this.form.getRawValue();
     // Punto de extensión futuro: aquí se dispararán los webhooks de WhatsApp/email.
     this.agenda
@@ -263,16 +284,27 @@ export class NuevaCitaModalComponent {
         hora: v.hora,
         motivo: v.motivo,
       })
-      .subscribe(() => {
-        // El Signal de citas ya se actualizó en el servicio (tap); además
-        // refrescamos los read models del dashboard para que sus gráficas y la
-        // lista de "Citas de hoy" reflejen la nueva cita sin pulsar F5.
-        this.dashboard.recargar();
-        this.toast.success(
-          `Cita agendada · ${paciente.mascota.nombre} el ${v.fecha} a las ${v.hora}`,
-        );
-        this.saved.emit(v.fecha);
-        this.close.emit();
+      .subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          // El Signal de citas ya se actualizó en el servicio (tap); además
+          // refrescamos los read models del dashboard para que sus gráficas y la
+          // lista de "Citas de hoy" reflejen la nueva cita sin pulsar F5.
+          this.dashboard.recargar();
+          this.toast.success(
+            `Cita agendada · ${paciente.mascota.nombre} el ${v.fecha} a las ${v.hora}`,
+          );
+          this.saved.emit(v.fecha);
+          this.close.emit();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.isSaving.set(false);
+          // Muestra el motivo real del rechazo del backend (p. ej. 422 por
+          // conflicto de horas o fecha en el pasado) en lugar de fallar en silencio.
+          const mensaje =
+            err.error?.message ?? 'No se pudo agendar la cita. Revisa la fecha y la hora seleccionadas.';
+          this.toast.error(mensaje);
+        },
       });
   }
 }
