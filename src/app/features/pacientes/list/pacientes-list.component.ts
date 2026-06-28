@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ClientesService } from '../../../core/application/services/clientes.service';
 import { PacientesService } from '../../../core/application/services/pacientes.service';
 import { ExportService } from '../../../core/application/services/export.service';
@@ -47,6 +48,7 @@ export class PacientesListComponent {
   private readonly exporter = inject(ExportService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly search = signal('');
   readonly filtroEspecie = signal<FiltroEspecie>('todos');
@@ -54,13 +56,13 @@ export class PacientesListComponent {
   /** Mascota que se está editando (abre el modal precargado) o `null`. */
   readonly pacienteEditar = signal<Mascota | null>(null);
 
-  /**
-   * Término de búsqueda recibido por la URL (`/pacientes?q=...`), enlazado por
-   * `withComponentInputBinding`. Permite que el buscador global del topbar
-   * preconfigure el filtro de la tabla.
-   */
-  @Input() set q(value: string | undefined) {
-    this.search.set(value ?? '');
+  constructor() {
+    // Escucha activa del query param `q` (buscador global del topbar). Refleja
+    // el término en el signal de búsqueda cada vez que cambia la URL, incluso si
+    // el usuario ya está en /pacientes, filtrando la tabla al instante sin F5.
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      this.search.set(params.get('q') ?? '');
+    });
   }
 
   readonly filtros: FiltroOption[] = [

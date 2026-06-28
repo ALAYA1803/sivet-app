@@ -15,10 +15,13 @@ export class DashboardService {
   private readonly _flujoPacientes = signal<FlujoPaciente[]>([]);
   private readonly _metodosPago = signal<ResumenMetodoPago[]>([]);
   private readonly _citasHoy = signal<CitaHoy[]>([]);
+  private readonly _unidadesVendidasHoy = signal(0);
 
   readonly flujoPacientes: Signal<readonly FlujoPaciente[]> = this._flujoPacientes.asReadonly();
   readonly metodosPago: Signal<readonly ResumenMetodoPago[]> = this._metodosPago.asReadonly();
   readonly citasHoy: Signal<readonly CitaHoy[]> = this._citasHoy.asReadonly();
+  /** Unidades de producto vendidas en el día (KPI del catálogo). */
+  readonly unidadesVendidasHoy: Signal<number> = this._unidadesVendidasHoy.asReadonly();
 
   constructor() {
     this.cargar();
@@ -48,5 +51,8 @@ export class DashboardService {
       .get<ResumenMetodoPago[]>(`${base}/metodosPago${qs}`)
       .subscribe((mp) => this._metodosPago.set(mp));
     this.http.get<CitaHoy[]>(`${base}/citasHoy${qs}`).subscribe((ch) => this._citasHoy.set(ch));
+    this.http
+      .get<{ unidades: number }>(`${base}/vendidosHoy${qs}`)
+      .subscribe((v) => this._unidadesVendidasHoy.set(v?.unidades ?? 0));
   }
 }

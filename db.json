@@ -887,5 +887,8 @@
       "rol": "Recepción",
       "clinica_id": "vet_001"
     }
-  ]
+  ],
+  "vendidosHoy": {
+    "unidades": 23
+  }
 }

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CatalogoService } from '../../core/application/services/catalogo.service';
+import { DashboardService } from '../../core/application/services/dashboard.service';
 import { Producto } from '../../core/domain/models';
 import { CardComponent } from '../../shared/ui/card.component';
 import { BadgeComponent } from '../../shared/ui/badge.component';
@@ -42,7 +43,11 @@ interface ProductoRow {
 })
 export class CatalogoComponent {
   private readonly catalogo = inject(CatalogoService);
+  private readonly dashboard = inject(DashboardService);
   private readonly exporter = inject(ExportService);
+
+  /** Unidades vendidas hoy (KPI), traídas del backend vía DashboardService. */
+  readonly unidadesVendidasHoy = this.dashboard.unidadesVendidasHoy;
 
   readonly search = signal('');
   readonly categoria = signal('Todos');
