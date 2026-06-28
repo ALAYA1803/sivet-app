@@ -65,6 +65,31 @@ export class PacientesService {
       .pipe(tap((creada) => this._mascotas.update((ms) => [creada, ...ms])));
   }
 
+  /**
+   * Actualiza una mascota existente (PUT) y refleja el cambio en el Signal al
+   * confirmarse. Se envía el objeto completo (incluido el `id`) para que tanto
+   * Spring como json-server reemplacen el recurso de forma consistente.
+   */
+  actualizarMascota(id: string, datos: Omit<Mascota, 'id'>): Observable<Mascota> {
+    return this.http
+      .put<Mascota>(`${this.mascotasUrl}/${id}`, { ...datos, id })
+      .pipe(tap((upd) => this._mascotas.update((ms) => ms.map((m) => (m.id === id ? upd : m)))));
+  }
+
+  /** Elimina una mascota (DELETE) y la quita del Signal al confirmarse. */
+  eliminarMascota(id: string): Observable<void> {
+    return this.http
+      .delete<void>(`${this.mascotasUrl}/${id}`)
+      .pipe(tap(() => this._mascotas.update((ms) => ms.filter((m) => m.id !== id))));
+  }
+
+  /** Elimina una atención de la historia clínica (DELETE) y refresca el Signal. */
+  eliminarAtencion(id: string): Observable<void> {
+    return this.http
+      .delete<void>(`${this.atencionesUrl}/${id}`)
+      .pipe(tap(() => this._atenciones.update((as) => as.filter((a) => a.id !== id))));
+  }
+
   /** Mascotas pertenecientes a un cliente. */
   getMascotasByCliente(clienteId: string): Mascota[] {
     return this._mascotas().filter((m) => m.clienteId === clienteId);

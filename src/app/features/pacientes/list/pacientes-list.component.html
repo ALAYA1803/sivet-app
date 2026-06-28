@@ -107,8 +107,26 @@
                 <span class="text-slate-400">Sin visitas</span>
               }
             </td>
-            <td class="px-5 py-3 text-right">
-              <app-icon name="chevron-right" [size]="16" class="text-slate-300 inline" />
+            <td class="px-5 py-3">
+              <div class="flex items-center justify-end gap-1">
+                <button
+                  type="button"
+                  (click)="editar(row.mascota, $event)"
+                  title="Editar paciente"
+                  class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"
+                >
+                  <app-icon name="edit" [size]="15" />
+                </button>
+                <button
+                  type="button"
+                  (click)="eliminar(row.mascota, $event)"
+                  title="Eliminar paciente"
+                  class="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-500 hover:text-red-600"
+                >
+                  <app-icon name="trash" [size]="15" />
+                </button>
+                <app-icon name="chevron-right" [size]="16" class="text-slate-300 inline" />
+              </div>
             </td>
           </tr>
         }
@@ -150,6 +168,14 @@
     <app-nuevo-paciente-modal
       (close)="showNuevoPaciente.set(false)"
       (saved)="onPacienteCreado($event)"
+    />
+  }
+
+  @if (pacienteEditar(); as m) {
+    <app-nuevo-paciente-modal
+      [mascota]="m"
+      (close)="pacienteEditar.set(null)"
+      (saved)="pacienteEditar.set(null)"
     />
   }
 </div>

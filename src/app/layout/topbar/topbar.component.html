@@ -30,8 +30,10 @@
         class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
       />
       <input
+        #searchInput
         type="text"
         placeholder="Buscar mascota, dueño por DNI o nombre, producto..."
+        (keyup.enter)="buscar(searchInput.value)"
         class="w-full h-10 pl-10 pr-16 text-sm rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)] transition-all placeholder:text-slate-400"
       />
       <kbd

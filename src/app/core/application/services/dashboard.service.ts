@@ -24,13 +24,29 @@ export class DashboardService {
     this.cargar();
   }
 
-  /** Carga inicial de los read models del dashboard desde el backend. */
-  private cargar(): void {
+  /**
+   * Refresca los read models del dashboard desde el backend. Se invoca tras
+   * crear una cita o una atención (para que las gráficas y la lista de citas se
+   * actualicen sin recargar la página) o al cambiar el rango de fechas.
+   *
+   * @param rango Rango de fechas opcional ('hoy' | 'semana' | 'mes'). Se envía
+   *   como query param para que el backend filtre; si no lo soporta, se ignora
+   *   y el dashboard aplica el filtrado localmente.
+   */
+  recargar(rango?: string): void {
+    this.cargar(rango);
+  }
+
+  /** Carga los read models del dashboard desde el backend. */
+  private cargar(rango?: string): void {
     const base = environment.apiUrl;
+    const qs = rango ? `?rango=${encodeURIComponent(rango)}` : '';
     this.http
-      .get<FlujoPaciente[]>(`${base}/flujoPacientes`)
+      .get<FlujoPaciente[]>(`${base}/flujoPacientes${qs}`)
       .subscribe((fp) => this._flujoPacientes.set(fp));
-    this.http.get<ResumenMetodoPago[]>(`${base}/metodosPago`).subscribe((mp) => this._metodosPago.set(mp));
-    this.http.get<CitaHoy[]>(`${base}/citasHoy`).subscribe((ch) => this._citasHoy.set(ch));
+    this.http
+      .get<ResumenMetodoPago[]>(`${base}/metodosPago${qs}`)
+      .subscribe((mp) => this._metodosPago.set(mp));
+    this.http.get<CitaHoy[]>(`${base}/citasHoy${qs}`).subscribe((ch) => this._citasHoy.set(ch));
   }
 }

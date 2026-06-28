@@ -2,9 +2,13 @@ import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } f
 import { Router } from '@angular/router';
 import { ClientesService } from '../../../core/application/services/clientes.service';
 import { PacientesService } from '../../../core/application/services/pacientes.service';
+import { AuthService } from '../../../core/application/services/auth.service';
+import { TenantService } from '../../../core/application/services/tenant.service';
+import { ToastService } from '../../../core/application/services/toast.service';
+import { RecetaPrintService } from '../../../core/application/services/receta-print.service';
 import { IconName } from '../../../shared/icons/icon.component';
 import { BadgeTone } from '../../../shared/ui/badge.component';
-import { TipoAtencion } from '../../../core/domain/models';
+import { Atencion, TipoAtencion } from '../../../core/domain/models';
 import { CardComponent } from '../../../shared/ui/card.component';
 import { BadgeComponent } from '../../../shared/ui/badge.component';
 import { ButtonComponent } from '../../../shared/ui/button.component';
@@ -15,6 +19,7 @@ import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import { RecetasTabComponent } from './tabs/recetas-tab.component';
 // QA: EstudiosTabComponent retirado — la pestaña de "Estudios" ya no se usa.
 import { VentasMascotaTabComponent } from './tabs/ventas-mascota-tab.component';
+import { NuevoPacienteModalComponent } from '../nuevo-paciente-modal.component';
 
 type TabId = 'historia' | 'recetas' | 'imagenes' | 'ventas';
 
@@ -59,13 +64,23 @@ const TIPO_NODE: Record<TipoAtencion, string> = {
     FechaPipe,
     RecetasTabComponent,
     VentasMascotaTabComponent,
+    NuevoPacienteModalComponent,
   ],
   templateUrl: './paciente-perfil.component.html',
 })
 export class PacientePerfilComponent {
   private readonly pacientes = inject(PacientesService);
   private readonly clientes = inject(ClientesService);
+  private readonly auth = inject(AuthService);
+  private readonly tenant = inject(TenantService);
+  private readonly toast = inject(ToastService);
+  private readonly recetaPrint = inject(RecetaPrintService);
   private readonly router = inject(Router);
+
+  /** Solo el administrador de la clínica puede borrar atenciones. */
+  readonly isAdmin = this.auth.isClinicAdmin;
+  /** Controla la apertura del modal de edición del paciente. */
+  readonly editando = signal(false);
 
   private readonly _id = signal('');
 
@@ -107,5 +122,48 @@ export class PacientePerfilComponent {
   }
   goTo(path: string): void {
     this.router.navigate([path]);
+  }
+
+  /** Abre el modal de edición precargado con la mascota actual. */
+  editarPerfil(): void {
+    this.editando.set(true);
+  }
+
+  /**
+   * Elimina una atención de la historia clínica tras confirmación. Solo se
+   * ofrece a administradores; el Signal del servicio refresca el timeline.
+   */
+  eliminarAtencion(atencion: Atencion, event: Event): void {
+    event.stopPropagation();
+    if (!confirm('¿De verdad quieres eliminar esta atención médica? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    this.pacientes.eliminarAtencion(atencion.id).subscribe({
+      next: () => this.toast.success('Atención eliminada'),
+      error: () => this.toast.error('No se pudo eliminar la atención.'),
+    });
+  }
+
+  /** Genera una receta imprimible a partir de la atención con receta más reciente. */
+  generarReceta(): void {
+    const conReceta = this.atenciones().find((a) => a.recetaId);
+    const receta = conReceta ? this.pacientes.getReceta(conReceta.recetaId!) : undefined;
+    const m = this.mascota();
+    if (!conReceta || !receta || !m) {
+      this.toast.error('Este paciente aún no tiene recetas registradas.');
+      this.tab.set('recetas');
+      return;
+    }
+    const cliente = this.clientes.getById(m.clienteId);
+    const t = this.tenant.tenant();
+    this.recetaPrint.imprimir({
+      clinicaNombre: t.clinicaNombre,
+      clinicaSede: t.sede,
+      paciente: { nombre: m.nombre, especie: m.especie, raza: m.raza, edad: m.edad, sexo: m.sexo },
+      duenio: { nombre: cliente?.nombre ?? '', dni: cliente?.dni ?? '' },
+      veterinario: conReceta.veterinario,
+      fecha: conReceta.fecha,
+      items: receta.items,
+    });
   }
 }

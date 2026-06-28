@@ -81,10 +81,10 @@
           <app-button variant="primary" (clicked)="goTo('/atencion')">
             <app-icon icon name="plus" [size]="16" [stroke]="2.4" />Nueva atención
           </app-button>
-          <app-button variant="secondary">
+          <app-button variant="secondary" (clicked)="generarReceta()">
             <app-icon icon name="file-text" [size]="16" />Generar receta
           </app-button>
-          <app-button variant="ghost">
+          <app-button variant="ghost" (clicked)="editarPerfil()">
             <app-icon icon name="edit" [size]="16" />Editar perfil
           </app-button>
         </div>
@@ -142,8 +142,20 @@
                             {{ a.motivo }}
                           </span>
                         </div>
-                        <div class="text-xs text-slate-500 tabular-nums">
-                          {{ a.fecha | fecha: 'larga' }} · {{ a.fecha | fecha: 'hora' }}
+                        <div class="flex items-center gap-2">
+                          <div class="text-xs text-slate-500 tabular-nums">
+                            {{ a.fecha | fecha: 'larga' }} · {{ a.fecha | fecha: 'hora' }}
+                          </div>
+                          @if (isAdmin()) {
+                            <button
+                              type="button"
+                              (click)="eliminarAtencion(a, $event)"
+                              title="Eliminar atención"
+                              class="p-1 rounded-md text-slate-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600"
+                            >
+                              <app-icon name="trash" [size]="14" />
+                            </button>
+                          }
                         </div>
                       </div>
                       <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
@@ -193,20 +205,26 @@
               <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
                 <app-icon name="syringe" [size]="15" class="text-emerald-600" />Vacunación
               </h3>
-              <div class="space-y-2.5 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-slate-600 dark:text-slate-400">Óctuple canina</span>
-                  <app-badge tone="success">Al día</app-badge>
+              @if (m.vacunacion) {
+                <p class="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-line">
+                  {{ m.vacunacion }}
+                </p>
+              } @else {
+                <div class="space-y-2.5 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-slate-600 dark:text-slate-400">Óctuple canina</span>
+                    <app-badge tone="success">Al día</app-badge>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-600 dark:text-slate-400">Antirrábica</span>
+                    <app-badge tone="success">Al día</app-badge>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-600 dark:text-slate-400">Desparasitación</span>
+                    <app-badge tone="warning">Vence 15 ago</app-badge>
+                  </div>
                 </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-600 dark:text-slate-400">Antirrábica</span>
-                  <app-badge tone="success">Al día</app-badge>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-600 dark:text-slate-400">Desparasitación</span>
-                  <app-badge tone="warning">Vence 15 ago</app-badge>
-                </div>
-              </div>
+              }
             </app-card>
 
             <app-card>
@@ -214,18 +232,21 @@
                 <app-icon name="heart" [size]="15" class="text-red-500" />Alergias y notas
               </h3>
               <div class="text-sm text-slate-600 dark:text-slate-400">
-                <div
-                  class="px-3 py-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg flex items-start gap-2 mb-2"
-                >
-                  <app-icon name="alert-triangle" [size]="14" class="text-amber-600 mt-0.5" />
-                  <div class="text-xs text-amber-800 dark:text-amber-200">
-                    <strong>Sensibilidad alimentaria</strong> a proteína de pollo. Usar dieta
-                    hipoalergénica.
+                @if (m.alergias) {
+                  <div
+                    class="px-3 py-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg flex items-start gap-2 mb-2"
+                  >
+                    <app-icon name="alert-triangle" [size]="14" class="text-amber-600 mt-0.5" />
+                    <div class="text-xs text-amber-800 dark:text-amber-200">{{ m.alergias }}</div>
                   </div>
-                </div>
-                <p class="text-xs">
-                  Paciente nervioso en consulta. Manejar con calma y sin movimientos bruscos.
-                </p>
+                } @else {
+                  <p class="text-xs text-slate-400 mb-2">Sin alergias registradas.</p>
+                }
+                @if (m.notasMedicas) {
+                  <p class="text-xs whitespace-pre-line">{{ m.notasMedicas }}</p>
+                } @else {
+                  <p class="text-xs text-slate-400">Sin notas médicas.</p>
+                }
               </div>
             </app-card>
 
@@ -261,6 +282,14 @@
           <app-ventas-mascota-tab [clienteId]="c.id" />
         }
       }
+    }
+
+    @if (editando()) {
+      <app-nuevo-paciente-modal
+        [mascota]="m"
+        (close)="editando.set(false)"
+        (saved)="editando.set(false)"
+      />
     }
   </div>
 } @else {

@@ -24,4 +24,10 @@ export interface Mascota {
   esterilizada: boolean;
   /** Código de microchip; opcional, no todas las mascotas lo tienen. */
   microchip?: string;
+  /** Historial/estado de vacunación (texto libre). */
+  vacunacion?: string;
+  /** Alergias conocidas del paciente. */
+  alergias?: string;
+  /** Notas médicas u observaciones de manejo. */
+  notasMedicas?: string;
 }

@@ -13,6 +13,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { AgendaService } from '../../core/application/services/agenda.service';
 import { PacientesService } from '../../core/application/services/pacientes.service';
 import { ClientesService } from '../../core/application/services/clientes.service';
+import { DashboardService } from '../../core/application/services/dashboard.service';
 import { ToastService } from '../../core/application/services/toast.service';
 import { Mascota } from '../../core/domain/models';
 import { ModalComponent } from '../../shared/ui/modal.component';
@@ -159,6 +160,7 @@ export class NuevaCitaModalComponent {
   private readonly agenda = inject(AgendaService);
   private readonly pacientes = inject(PacientesService);
   private readonly clientes = inject(ClientesService);
+  private readonly dashboard = inject(DashboardService);
   private readonly toast = inject(ToastService);
 
   @Output() close = new EventEmitter<void>();
@@ -262,6 +264,10 @@ export class NuevaCitaModalComponent {
         motivo: v.motivo,
       })
       .subscribe(() => {
+        // El Signal de citas ya se actualizó en el servicio (tap); además
+        // refrescamos los read models del dashboard para que sus gráficas y la
+        // lista de "Citas de hoy" reflejen la nueva cita sin pulsar F5.
+        this.dashboard.recargar();
         this.toast.success(
           `Cita agendada · ${paciente.mascota.nombre} el ${v.fecha} a las ${v.hora}`,
         );

@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CatalogoService } from '../../core/application/services/catalogo.service';
 import { DashboardService } from '../../core/application/services/dashboard.service';
 import { PacientesService } from '../../core/application/services/pacientes.service';
 import { PosService } from '../../core/application/services/pos.service';
 import { TenantService } from '../../core/application/services/tenant.service';
-import { Especie } from '../../core/domain/models';
+import { Especie, FlujoPaciente } from '../../core/domain/models';
 import { CardComponent } from '../../shared/ui/card.component';
 import { BadgeComponent } from '../../shared/ui/badge.component';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -24,6 +24,14 @@ interface CitaVista {
   tipo: string;
   vet: string;
   especie: Especie;
+}
+
+/** Rango temporal aplicado a las gráficas del dashboard. */
+export type RangoDashboard = 'hoy' | 'semana' | 'mes';
+
+interface RangoOption {
+  value: RangoDashboard;
+  label: string;
 }
 
 /** Producto crítico con el porcentaje de stock ya calculado. */
@@ -61,8 +69,53 @@ export class DashboardComponent {
   private readonly tenant = inject(TenantService);
   private readonly router = inject(Router);
 
-  readonly flujoPacientes = this.dashboard.flujoPacientes;
   readonly metodosPago = this.dashboard.metodosPago;
+
+  /** Rango activo de las gráficas (botones Hoy / Semana / Mes). */
+  readonly rangoActivo = signal<RangoDashboard>('semana');
+  readonly rangos: RangoOption[] = [
+    { value: 'hoy', label: 'Hoy' },
+    { value: 'semana', label: 'Semana' },
+    { value: 'mes', label: 'Mes' },
+  ];
+
+  /**
+   * Serie del flujo de pacientes recortada según el rango activo. El backend
+   * entrega la ventana completa disponible; el recorte se aplica localmente para
+   * que las gráficas se redibujen de inmediato al cambiar de rango.
+   */
+  readonly flujoPacientes = computed<readonly FlujoPaciente[]>(() => {
+    const serie = this.dashboard.flujoPacientes();
+    switch (this.rangoActivo()) {
+      case 'hoy':
+        return serie.slice(-1);
+      case 'semana':
+        return serie.slice(-7);
+      case 'mes':
+      default:
+        return serie;
+    }
+  });
+
+  /** Texto del subtítulo de la gráfica según el rango activo. */
+  readonly rangoDescripcion = computed(() => {
+    switch (this.rangoActivo()) {
+      case 'hoy':
+        return 'Hoy · Atenciones registradas';
+      case 'mes':
+        return 'Últimos 30 días · Atenciones registradas';
+      case 'semana':
+      default:
+        return 'Últimos 7 días · Atenciones registradas';
+    }
+  });
+
+  /** Cambia el rango activo y vuelve a pedir los read models con ese filtro. */
+  setRango(rango: RangoDashboard): void {
+    if (this.rangoActivo() === rango) return;
+    this.rangoActivo.set(rango);
+    this.dashboard.recargar(rango);
+  }
 
   /** Identidad del usuario y la clínica activos (del login, no en duro). */
   readonly doctorNombre = computed(() => this.tenant.tenant().doctorNombre);

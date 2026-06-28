@@ -10,6 +10,7 @@ import {
 import { ClientesService } from '../../core/application/services/clientes.service';
 import { TenantService } from '../../core/application/services/tenant.service';
 import { PacientesService } from '../../core/application/services/pacientes.service';
+import { DashboardService } from '../../core/application/services/dashboard.service';
 import { ToastService } from '../../core/application/services/toast.service';
 import { Cliente, Mascota, RecetaItem, TIPOS_ATENCION, TipoAtencion } from '../../core/domain/models';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -49,6 +50,7 @@ export class AtencionComponent {
   private readonly pacientes = inject(PacientesService);
   private readonly clientes = inject(ClientesService);
   private readonly tenant = inject(TenantService);
+  private readonly dashboard = inject(DashboardService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -218,6 +220,9 @@ export class AtencionComponent {
       .subscribe({
         next: (nueva) => {
           this.isSaving.set(false);
+          // La historia clínica ya es reactiva (Signal de atenciones); refrescamos
+          // también el dashboard para que sus KPIs y gráficas se actualicen al vuelo.
+          this.dashboard.recargar();
           this.toast.success('Atención registrada correctamente');
           this.router.navigate(['/pacientes', nueva.mascotaId]);
         },

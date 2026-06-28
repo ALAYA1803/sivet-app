@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ClientesService } from '../../../core/application/services/clientes.service';
 import { PacientesService } from '../../../core/application/services/pacientes.service';
 import { ExportService } from '../../../core/application/services/export.service';
+import { ToastService } from '../../../core/application/services/toast.service';
 import { Atencion, Cliente, Mascota } from '../../../core/domain/models';
 import { CardComponent } from '../../../shared/ui/card.component';
 import { ButtonComponent } from '../../../shared/ui/button.component';
@@ -44,11 +45,23 @@ export class PacientesListComponent {
   private readonly pacientes = inject(PacientesService);
   private readonly clientes = inject(ClientesService);
   private readonly exporter = inject(ExportService);
+  private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly search = signal('');
   readonly filtroEspecie = signal<FiltroEspecie>('todos');
   readonly showNuevoPaciente = signal(false);
+  /** Mascota que se está editando (abre el modal precargado) o `null`. */
+  readonly pacienteEditar = signal<Mascota | null>(null);
+
+  /**
+   * Término de búsqueda recibido por la URL (`/pacientes?q=...`), enlazado por
+   * `withComponentInputBinding`. Permite que el buscador global del topbar
+   * preconfigure el filtro de la tabla.
+   */
+  @Input() set q(value: string | undefined) {
+    this.search.set(value ?? '');
+  }
 
   readonly filtros: FiltroOption[] = [
     { value: 'todos', label: 'Todos' },
@@ -90,6 +103,25 @@ export class PacientesListComponent {
 
   onPacienteCreado(id: string): void {
     this.router.navigate(['/pacientes', id]);
+  }
+
+  /** Abre el modal en modo edición con los datos de la mascota. */
+  editar(mascota: Mascota, event: Event): void {
+    event.stopPropagation();
+    this.pacienteEditar.set(mascota);
+  }
+
+  /**
+   * Elimina una mascota tras confirmación nativa. El Signal del servicio quita
+   * la fila al confirmarse el DELETE, por lo que la tabla se refresca al vuelo.
+   */
+  eliminar(mascota: Mascota, event: Event): void {
+    event.stopPropagation();
+    if (!confirm('¿De verdad quieres eliminar este paciente?')) return;
+    this.pacientes.eliminarMascota(mascota.id).subscribe({
+      next: () => this.toast.success(`${mascota.nombre} fue eliminado`),
+      error: () => this.toast.error('No se pudo eliminar el paciente.'),
+    });
   }
 
   exportar(): void {

@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
 import { PacientesService } from '../../../../core/application/services/pacientes.service';
-import { ExportService } from '../../../../core/application/services/export.service';
+import { ClientesService } from '../../../../core/application/services/clientes.service';
+import { TenantService } from '../../../../core/application/services/tenant.service';
+import { RecetaPrintService } from '../../../../core/application/services/receta-print.service';
 import { Atencion, Receta } from '../../../../core/domain/models';
 import { CardComponent } from '../../../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../../../shared/ui/empty-state.component';
@@ -21,7 +23,9 @@ interface RecetaVista {
 })
 export class RecetasTabComponent {
   private readonly pacientes = inject(PacientesService);
-  private readonly exporter = inject(ExportService);
+  private readonly clientes = inject(ClientesService);
+  private readonly tenant = inject(TenantService);
+  private readonly print = inject(RecetaPrintService);
   private readonly _mascotaId = signal('');
 
   @Input({ required: true }) set mascotaId(value: string) {
@@ -36,8 +40,25 @@ export class RecetasTabComponent {
       .filter((x): x is RecetaVista => x.receta !== undefined),
   );
 
-  /** Descarga el PDF de la receta generado por el backend (`GET /recetas/{id}/pdf`). */
-  imprimir(recetaId: string): void {
-    this.exporter.descargarRecetaPdf(recetaId);
+  /** Abre una ventana de impresión con la receta maquetada lista para firmar. */
+  imprimir(vista: RecetaVista): void {
+    const mascota = this.pacientes.getMascota(this._mascotaId());
+    const cliente = mascota ? this.clientes.getById(mascota.clienteId) : undefined;
+    const t = this.tenant.tenant();
+    this.print.imprimir({
+      clinicaNombre: t.clinicaNombre,
+      clinicaSede: t.sede,
+      paciente: {
+        nombre: mascota?.nombre ?? '',
+        especie: mascota?.especie ?? '',
+        raza: mascota?.raza ?? '',
+        edad: mascota?.edad ?? '',
+        sexo: mascota?.sexo ?? '',
+      },
+      duenio: { nombre: cliente?.nombre ?? '', dni: cliente?.dni ?? '' },
+      veterinario: vista.atencion.veterinario,
+      fecha: vista.atencion.fecha,
+      items: vista.receta.items,
+    });
   }
 }
