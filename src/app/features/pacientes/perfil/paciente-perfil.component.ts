@@ -13,7 +13,7 @@ import { PetAvatarComponent } from '../../../shared/ui/pet-avatar.component';
 import { IconComponent } from '../../../shared/icons/icon.component';
 import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import { RecetasTabComponent } from './tabs/recetas-tab.component';
-import { EstudiosTabComponent } from './tabs/estudios-tab.component';
+// QA: EstudiosTabComponent retirado — la pestaña de "Estudios" ya no se usa.
 import { VentasMascotaTabComponent } from './tabs/ventas-mascota-tab.component';
 
 type TabId = 'historia' | 'recetas' | 'imagenes' | 'ventas';
@@ -58,7 +58,6 @@ const TIPO_NODE: Record<TipoAtencion, string> = {
     IconComponent,
     FechaPipe,
     RecetasTabComponent,
-    EstudiosTabComponent,
     VentasMascotaTabComponent,
   ],
   templateUrl: './paciente-perfil.component.html',
@@ -80,7 +79,8 @@ export class PacientePerfilComponent {
   readonly tabs: Tab[] = [
     { id: 'historia', label: 'Historia clínica', icon: 'activity' },
     { id: 'recetas', label: 'Recetas', icon: 'pill' },
-    { id: 'imagenes', label: 'Estudios', icon: 'file-text' },
+    // QA: pestaña de "Estudios" oculta (ya no se usa)
+    // { id: 'imagenes', label: 'Estudios', icon: 'file-text' },
     { id: 'ventas', label: 'Ventas', icon: 'receipt' },
   ];
 

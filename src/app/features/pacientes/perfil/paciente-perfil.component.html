@@ -252,9 +252,10 @@
       @case ('recetas') {
         <app-recetas-tab [mascotaId]="mascotaId()" />
       }
-      @case ('imagenes') {
+      <!-- QA: sección de "Estudios" oculta (ya no se usa) -->
+      <!-- @case ('imagenes') {
         <app-estudios-tab [mascotaId]="mascotaId()" />
-      }
+      } -->
       @case ('ventas') {
         @if (cliente(); as c) {
           <app-ventas-mascota-tab [clienteId]="c.id" />

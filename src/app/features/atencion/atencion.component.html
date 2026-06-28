@@ -395,8 +395,8 @@
             Continuar<app-icon iconRight name="chevron-right" [size]="16" />
           </app-button>
         } @else {
-          <app-button variant="success" (clicked)="guardar()">
-            <app-icon icon name="check" [size]="16" [stroke]="2.4" />Guardar atención
+          <app-button variant="success" [disabled]="isSaving()" (clicked)="guardar()">
+            <app-icon icon name="check" [size]="16" [stroke]="2.4" />{{ isSaving() ? 'Guardando...' : 'Guardar atención' }}
           </app-button>
         }
       </div>
@@ -440,20 +440,7 @@
         </app-card>
       }
 
-      <div
-        class="rounded-xl p-5 bg-[var(--primary-50)] border border-[var(--primary-200)] dark:bg-[var(--primary-50)]/10 dark:border-[var(--primary-600)]/30"
-      >
-        <div class="flex gap-2.5">
-          <app-icon name="sparkles" [size]="16" class="text-[var(--primary-700)] mt-0.5 flex-shrink-0" />
-          <div>
-            <div class="text-sm font-semibold text-[var(--primary-700)]">Tip de SIVET</div>
-            <div class="text-xs text-[var(--primary-700)]/80 mt-1 leading-relaxed">
-              Una vez guardada, esta atención no se podrá modificar. Solo agregar enmiendas firmadas
-              como anexo.
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- QA: recuadro "Tip de SIVET" eliminado -->
     </div>
   </div>
 </div>

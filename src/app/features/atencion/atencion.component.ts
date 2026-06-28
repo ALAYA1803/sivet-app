@@ -70,6 +70,8 @@ export class AtencionComponent {
   ];
 
   readonly step = signal(1);
+  /** Evita el doble envío del formulario mientras se guarda la atención. */
+  readonly isSaving = signal(false);
   readonly pacienteId = signal('');
   readonly searchPaciente = signal('');
   readonly showPicker = signal(false);
@@ -189,7 +191,9 @@ export class AtencionComponent {
       this.toast.error('Completa los campos obligatorios de la atención');
       return;
     }
+    if (this.isSaving()) return;
 
+    this.isSaving.set(true);
     const v = this.form.getRawValue();
     const recetaItems: RecetaItem[] = this.incluirReceta
       ? (v.receta as RecetaItem[]).filter((m) => m.medicamento.trim().length > 0)
@@ -211,9 +215,16 @@ export class AtencionComponent {
         },
         recetaItems,
       )
-      .subscribe((nueva) => {
-        this.toast.success('Atención registrada correctamente');
-        this.router.navigate(['/pacientes', nueva.mascotaId]);
+      .subscribe({
+        next: (nueva) => {
+          this.isSaving.set(false);
+          this.toast.success('Atención registrada correctamente');
+          this.router.navigate(['/pacientes', nueva.mascotaId]);
+        },
+        error: () => {
+          this.isSaving.set(false);
+          this.toast.error('No se pudo registrar la atención. Inténtalo de nuevo.');
+        },
       });
   }
 }

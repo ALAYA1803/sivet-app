@@ -51,6 +51,7 @@ export type ProductoModalMode = 'crear' | 'editar' | 'ver';
         <div>
           <label [class]="labelClass">Precio (S/) *</label>
           <input type="number" step="0.1" formControlName="precio" [class]="inputClass" placeholder="0.00" />
+          <p class="mt-1 text-xs text-slate-500">Nota: El precio introducido debe incluir el IGV</p>
         </div>
         <div>
           <label [class]="labelClass">Unidad *</label>
